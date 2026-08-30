@@ -1,0 +1,12 @@
+ENVIRONMENT=development
+DEV_AUTH_EMAIL=you@example.com
+GEMINI_API_KEY=replace-with-google-ai-studio-key
+IMAGE_PROVIDER=higgsfield
+HIGGSFIELD_MCP_URL=https://mcp.higgsfield.ai/mcp
+HIGGSFIELD_TOKEN_ENCRYPTION_KEY=replace-with-a-long-random-secret
+HIGGSFIELD_IMAGE_MODEL=nano_banana_pro
+HIGGSFIELD_CREDITS_PER_IMAGE=2
+HIGGSFIELD_DAILY_CREDIT_LIMIT=100
+RESEND_API_KEY=replace-with-resend-key
+GOOGLE_CLIENT_ID=replace-with-google-web-client-id
+EMAIL_FROM=StoryHero <hello@theaiceos.com>

@@ -1,0 +1,34 @@
+name = "storyhero-direct"
+main = "src/index.ts"
+compatibility_date = "2026-08-28"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+run_worker_first = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "storyhero-db-direct"
+database_id = "fdbfd76c-eea8-494a-8941-b1b4d2742af5"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "storyhero-media-direct"
+
+[vars]
+ENVIRONMENT = "production"
+IMAGE_PROVIDER = "gemini"
+IMAGE_FALLBACK_PROVIDER = "higgsfield"
+HIGGSFIELD_MCP_URL = "https://mcp.higgsfield.ai/mcp"
+HIGGSFIELD_IMAGE_MODEL = "nano_banana_pro"
+HIGGSFIELD_CREDITS_PER_IMAGE = "2"
+HIGGSFIELD_DAILY_CREDIT_LIMIT = "100"
+GEMINI_TEXT_MODEL = "gemini-3.7-flash"
+GEMINI_TEXT_FALLBACK_MODEL = "gemini-3.1-flash-lite"
+GEMINI_IMAGE_MODEL = "gemini-3.1-flash-image"
+GEMINI_TTS_MODEL = "gemini-3.1-flash-tts-preview"
+GEMINI_TTS_FALLBACK_MODEL = "gemini-2.5-flash-preview-tts"
+EMAIL_FROM = "StoryHero <hello@theaiceos.com>"
