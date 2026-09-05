@@ -131,7 +131,7 @@ export function CreateWizardPage() {
   const [phonicsInterest, setPhonicsInterest] = useState('');
   const [theme, setTheme] = useState('');
   const [readingLevel, setReadingLevel] = useState('');
-  const [pageCount, setPageCount] = useState(11);
+  const [pageCount, setPageCount] = useState(10);
   const [worldId, setWorldId] = useState('');
   const [friendId, setFriendId] = useState('');
   const [villainId, setVillainId] = useState('');
@@ -276,6 +276,9 @@ export function CreateWizardPage() {
       if (e.message === 'trial_limit') {
         setStep(4);
         setShowUpgrade(true);
+      } else if (e.message === 'book_limit') {
+        setStep(4);
+        setError(t('bookLimitReached'));
       } else {
         setError(e.message);
       }
@@ -330,7 +333,7 @@ export function CreateWizardPage() {
     ['', t('customThemeNone')], ['courage', t('themeCourage')], ['kindness', t('themeKindness')],
     ['sharing', t('themeSharing')], ['honesty', t('themeHonesty')], ['friendship', t('themeFriendship')], ['bedtime calm', t('themeBedtime')],
   ];
-  const LENGTHS: [number, string][] = [[6, t('pagesShort')], [11, t('pagesStandard')], [16, t('pagesLong')]];
+  const LENGTHS: [number, string][] = [[6, t('pagesShort')], [10, t('pagesStandard')]];
   const LEVELS: [string, string][] = [
     ['', t('levelAuto')], ['simple', t('levelSimple')], ['growing', t('levelGrowing')], ['confident', t('levelConfident')],
   ];

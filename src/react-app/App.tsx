@@ -27,7 +27,7 @@ export function App() {
             <Route path="/contact" element={<LegalPage page="contact" />} />
             <Route path="/app" element={<AuthProtect><DashboardPage /></AuthProtect>} />
             <Route path="/privacy-data" element={<AuthProtect><PrivacyDataPage /></AuthProtect>} />
-            <Route path="/create" element={<AuthProtect><CreateWizardPage /></AuthProtect>} />
+            <Route path="/create" element={<AuthProtect requireApproved><CreateWizardPage /></AuthProtect>} />
             <Route path="/book/:id" element={<AuthProtect><ReaderPage /></AuthProtect>} />
             {/* Hidden owner-only credits dashboard — backend 404s for everyone else */}
             <Route path="/admin" element={<AuthProtect><AdminPage /></AuthProtect>} />

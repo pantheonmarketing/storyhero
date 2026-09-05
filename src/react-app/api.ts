@@ -72,7 +72,10 @@ export const api = {
   gallery: (limit = 8) => req<GalleryItem[]>(`/api/gallery?limit=${limit}`),
   printOrder: (bookId: string, contact: string) =>
     req<{ success: boolean }>(`/api/books/${bookId}/print-order`, { method: 'POST', body: JSON.stringify({ contact }) }),
-  credits: () => req<{ credits: number; unlimited: boolean }>('/api/credits'),
+  credits: () => req<{
+    credits: number; unlimited: boolean; approved: boolean; approvedAt: string | null;
+    bookLimit: number | null; booksUsed: number; booksRemaining: number | null;
+  }>('/api/credits'),
   deleteAccount: (confirmation: string) =>
     req<{ success: boolean }>('/api/users/me', { method: 'DELETE', body: JSON.stringify({ confirmation }) }),
   adminUsers: () => req<AdminUser[]>('/api/admin/users'),
@@ -82,6 +85,8 @@ export const api = {
     req<LedgerEntry[]>(`/api/admin/ledger${email ? `?email=${encodeURIComponent(email)}` : ''}`),
   adminBan: (email: string, banned: boolean) =>
     req<{ success: boolean; email: string; banned: boolean }>('/api/admin/ban', { method: 'POST', body: JSON.stringify({ email, banned }) }),
+  adminApprove: (email: string, approved: boolean) =>
+    req<{ success: boolean; email: string; approved: boolean; booksRemaining: number | null }>('/api/admin/approve', { method: 'POST', body: JSON.stringify({ email, approved }) }),
   adminDeleteUser: (email: string) =>
     req<{ success: boolean; email: string }>('/api/admin/delete-user', { method: 'POST', body: JSON.stringify({ email }) }),
   adminHiggsfieldStatus: () => req<HiggsfieldStatus>('/api/admin/higgsfield/status'),
@@ -91,7 +96,8 @@ export const api = {
 
 export interface AdminUser {
   email: string; credits: number; books: number; children: number;
-  last_book_at: string | null; banned: number; signup: string | null;
+  books_remaining: number | null; unlimited: boolean; last_book_at: string | null; approved: number;
+  approved_at: string | null; approved_by: string | null; banned: number; signup: string | null;
 }
 export interface LedgerEntry {
   id: string; email: string; delta: number; reason: string | null; admin_email: string | null; created_at: string;

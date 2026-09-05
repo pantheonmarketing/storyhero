@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { ReactNode } from 'react';
 import { useLang } from '../i18n';
 
-export function AuthProtect({ children }: { children: ReactNode }) {
+export function AuthProtect({ children, requireApproved = false }: { children: ReactNode; requireApproved?: boolean }) {
   const { user, isPending } = useAuth();
   const location = useLocation();
   const { t } = useLang();
@@ -20,5 +20,6 @@ export function AuthProtect({ children }: { children: ReactNode }) {
   }
 
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
+  if (requireApproved && !user.approved) return <Navigate to="/app" replace />;
   return <>{children}</>;
 }

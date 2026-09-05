@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Coins, Plus, Minus, RefreshCw, ScrollText, Users, Ban, ShieldCheck, Trash2, Search, Link2 } from 'lucide-react';
+import { RefreshCw, ScrollText, Users, Ban, ShieldCheck, Trash2, Search, Link2, Clock3, UserX, BookOpen } from 'lucide-react';
 import { api, AdminUser, LedgerEntry, HiggsfieldStatus } from '../api';
 
 /**
@@ -17,9 +17,6 @@ export function AdminPage() {
   const [msg, setMsg] = useState('');
   const [query, setQuery] = useState('');
   const [higgsfield, setHiggsfield] = useState<HiggsfieldStatus | null>(null);
-  // grant-by-email form (for users who haven't signed up yet)
-  const [gEmail, setGEmail] = useState('');
-  const [gAmount, setGAmount] = useState(1);
 
   const load = () => {
     api.adminUsers()
@@ -31,12 +28,13 @@ export function AdminPage() {
 
   const refreshLedger = () => { if (showLedger) api.adminLedger().then(setLedger).catch(() => {}); };
 
-  const grant = async (email: string, delta: number) => {
-    if (!delta) return;
-    setBusy(email); setMsg('');
+  const toggleApproval = async (u: AdminUser) => {
+    const approving = !u.approved;
+    if (!approving && !confirm(`Revoke generation access for ${u.email}? Their existing books stay readable.`)) return;
+    setBusy(u.email); setMsg('');
     try {
-      const r = await api.adminGrant(email, delta);
-      setMsg(`${r.email} → ${r.credits} credits`);
+      const r = await api.adminApprove(u.email, approving);
+      setMsg(`${r.email} ${approving ? `approved with ${r.booksRemaining} books remaining` : 'moved back to pending'}`);
       load(); refreshLedger();
     } catch (e: any) { setMsg(`Error: ${e.message}`); }
     finally { setBusy(''); }
@@ -90,9 +88,10 @@ export function AdminPage() {
 
   if (!users) return <div className="auth-page"><div className="spinner" /></div>;
 
-  const totalCredits = users.reduce((s, u) => s + u.credits, 0);
   const totalBooks = users.reduce((s, u) => s + u.books, 0);
   const bannedCount = users.filter((u) => u.banned).length;
+  const pendingCount = users.filter((u) => !u.approved && !u.banned).length;
+  const approvedCount = users.filter((u) => u.approved && !u.banned).length;
 
   const chip = (icon: ReactNode, label: string) => (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: '#faf5ff', border: '1.5px solid #e9d5ff', borderRadius: 999, padding: '7px 16px', fontSize: '.88rem', fontWeight: 700, color: '#6b21a8' }}>
@@ -104,7 +103,7 @@ export function AdminPage() {
     <div style={{ maxWidth: 1040, margin: '0 auto', padding: '32px 16px 80px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
         <h1 style={{ fontSize: '1.6rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Coins size={26} color="#9333ea" /> Admin
+          <ShieldCheck size={26} color="#9333ea" /> Parent access
         </h1>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-secondary btn-sm" onClick={load}><RefreshCw size={15} /> Refresh</button>
@@ -115,8 +114,9 @@ export function AdminPage() {
       {/* Stats */}
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 22 }}>
         {chip(<Users size={16} />, `${users.length} users`)}
-        {chip(<Coins size={16} />, `${totalCredits} credits outstanding`)}
-        {chip(<ScrollText size={16} />, `${totalBooks} books created`)}
+        {chip(<Clock3 size={16} />, `${pendingCount} awaiting approval`)}
+        {chip(<ShieldCheck size={16} />, `${approvedCount} approved`)}
+        {chip(<BookOpen size={16} />, `${totalBooks} books created`)}
         {bannedCount > 0 && chip(<Ban size={16} />, `${bannedCount} banned`)}
       </div>
 
@@ -137,18 +137,7 @@ export function AdminPage() {
         </button>
       </div>
 
-      {/* Grant by email (works before the user ever signs up) */}
-      <div style={{ background: '#fff', border: '1.5px solid #e9d5ff', borderRadius: 14, padding: 16, marginBottom: 16, display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-        <input className="input" style={{ flex: '1 1 220px', margin: 0 }} placeholder="user@email.com"
-          value={gEmail} onChange={(e) => setGEmail(e.target.value)} />
-        <input className="input" style={{ width: 90, margin: 0 }} type="number" value={gAmount}
-          onChange={(e) => setGAmount(Math.round(Number(e.target.value)) || 0)} />
-        <button className="btn btn-primary btn-sm" disabled={!!busy || !gEmail.trim() || !gAmount}
-          onClick={() => grant(gEmail.trim(), gAmount)}>
-          <Plus size={15} /> Grant credits
-        </button>
-        {msg && <span style={{ fontSize: '.85rem', color: msg.startsWith('Error') ? '#dc2626' : '#16a34a', fontWeight: 600 }}>{msg}</span>}
-      </div>
+      {msg && <div style={{ marginBottom: 16, fontSize: '.88rem', color: msg.startsWith('Error') ? '#dc2626' : '#166534', fontWeight: 700 }}>{msg}</div>}
 
       {/* Search */}
       <div style={{ position: 'relative', marginBottom: 14, maxWidth: 340 }}>
@@ -162,45 +151,46 @@ export function AdminPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '.9rem' }}>
           <thead>
             <tr style={{ background: '#faf5ff', textAlign: 'left' }}>
-              {['Email', 'Credits', 'Books', 'Kids', 'Last book', 'Credits', 'Account'].map((h, i) => (
+              {['Email', 'Access', 'Books', 'Remaining', 'Kids', 'Last book', 'Actions'].map((h, i) => (
                 <th key={i} style={{ padding: '10px 14px', fontWeight: 800, color: '#6b21a8', whiteSpace: 'nowrap' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map((u) => (
-              <tr key={u.email} style={{ borderTop: '1px solid #f3f0fa', background: u.banned ? '#fef2f2' : undefined }}>
+              <tr key={u.email} style={{ borderTop: '1px solid #f3f0fa', background: u.banned ? '#fef2f2' : !u.approved ? '#fffbeb' : undefined }}>
                 <td style={{ padding: '10px 14px', fontWeight: 600 }}>
                   {u.email}
-                  {u.banned ? <span style={{ marginLeft: 8, background: '#dc2626', color: '#fff', fontSize: '.64rem', fontWeight: 800, padding: '2px 7px', borderRadius: 999, verticalAlign: 'middle' }}>BANNED</span> : null}
                 </td>
                 <td style={{ padding: '10px 14px' }}>
-                  <span style={{ fontWeight: 800, color: u.credits > 0 ? '#16a34a' : '#9ca3af' }}>{u.credits}</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: u.banned ? '#dc2626' : u.approved ? '#dcfce7' : '#fef3c7', color: u.banned ? '#fff' : u.approved ? '#166534' : '#92400e', fontSize: '.7rem', fontWeight: 800, padding: '4px 9px', borderRadius: 999, whiteSpace: 'nowrap' }}>
+                    {u.banned ? <Ban size={12} /> : u.approved ? <ShieldCheck size={12} /> : <Clock3 size={12} />}
+                    {u.banned ? 'Banned' : u.unlimited ? 'Owner' : u.approved ? 'Approved' : 'Pending'}
+                  </span>
                 </td>
-                <td style={{ padding: '10px 14px' }}>{u.books}</td>
+                <td style={{ padding: '10px 14px', fontWeight: 700 }}>{u.unlimited ? u.books : `${u.books} / 6`}</td>
+                <td style={{ padding: '10px 14px', fontWeight: 800, color: u.unlimited || (u.books_remaining ?? 0) > 0 ? '#16a34a' : '#9ca3af' }}>{u.unlimited ? 'Unlimited' : u.books_remaining}</td>
                 <td style={{ padding: '10px 14px' }}>{u.children}</td>
                 <td style={{ padding: '10px 14px', color: '#8b7d6b', whiteSpace: 'nowrap' }}>{u.last_book_at ? u.last_book_at.slice(0, 16) : '-'}</td>
                 <td style={{ padding: '8px 14px', whiteSpace: 'nowrap' }}>
-                  {[1, 5].map((n) => (
-                    <button key={n} className="btn btn-secondary btn-sm" style={{ marginRight: 6 }}
-                      disabled={busy === u.email} onClick={() => grant(u.email, n)}>
-                      <Plus size={13} /> {n}
-                    </button>
-                  ))}
-                  <button className="btn btn-secondary btn-sm" disabled={busy === u.email || u.credits < 1}
-                    onClick={() => grant(u.email, -1)}>
-                    <Minus size={13} /> 1
-                  </button>
-                </td>
-                <td style={{ padding: '8px 14px', whiteSpace: 'nowrap' }}>
-                  <button className="btn btn-secondary btn-sm" style={{ marginRight: 6, color: u.banned ? '#16a34a' : '#b45309' }}
-                    disabled={busy === u.email} onClick={() => toggleBan(u)}>
-                    {u.banned ? <><ShieldCheck size={13} /> Unban</> : <><Ban size={13} /> Ban</>}
-                  </button>
-                  <button className="btn btn-secondary btn-sm" style={{ color: '#dc2626' }}
-                    disabled={busy === u.email} onClick={() => removeUser(u)}>
-                    <Trash2 size={13} />
-                  </button>
+                  {u.unlimited ? (
+                    <span style={{ color: '#9ca3af', fontWeight: 700 }}>Protected owner</span>
+                  ) : (
+                    <>
+                      <button className="btn btn-secondary btn-sm" style={{ marginRight: 6, color: u.approved ? '#92400e' : '#166534' }}
+                        disabled={busy === u.email || !!u.banned} onClick={() => toggleApproval(u)}>
+                        {u.approved ? <><UserX size={13} /> Revoke</> : <><ShieldCheck size={13} /> Approve</>}
+                      </button>
+                      <button className="btn btn-secondary btn-sm" style={{ marginRight: 6, color: u.banned ? '#16a34a' : '#b45309' }}
+                        disabled={busy === u.email} onClick={() => toggleBan(u)}>
+                        {u.banned ? <><ShieldCheck size={13} /> Unban</> : <><Ban size={13} /> Ban</>}
+                      </button>
+                      <button className="btn btn-secondary btn-sm" style={{ color: '#dc2626' }}
+                        disabled={busy === u.email} onClick={() => removeUser(u)}>
+                        <Trash2 size={13} />
+                      </button>
+                    </>
+                  )}
                 </td>
               </tr>
             ))}

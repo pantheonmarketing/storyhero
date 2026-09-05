@@ -4,6 +4,13 @@ export type AuthUser = {
   email: string;
   name?: string;
   picture?: string;
+  approved: boolean;
+  approvedAt?: string | null;
+  unlimited: boolean;
+  bookLimit: number | null;
+  booksUsed: number;
+  booksRemaining: number | null;
+  credits: number;
 };
 
 type AuthContextValue = {

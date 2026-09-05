@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Star, BookOpen, Zap, Palette, Share2, Heart, Shield, Clock, Gift,
-  CheckCircle, Quote, Users, Mic, FileDown, Camera, Sprout, Crown, Bell, ArrowRight,
+  CheckCircle, Quote, Users, Mic, FileDown, Camera, Crown, ArrowRight,
 } from 'lucide-react';
 import { STORIES, getStory } from '../../shared/stories';
 import { api, GalleryItem } from '../api';
@@ -152,7 +152,7 @@ function CinematicHero({ th }: { th: boolean }) {
           onClick={() => navigate('/create')}
           className="mt-8 inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-8 md:px-12 py-4 md:py-5 text-lg md:text-xl font-bold rounded-full shadow-2xl hover:scale-105 transition-all duration-300 border-4 border-white/20"
         >
-          <BookOpen className="w-5 h-5" /> {th ? 'สร้างนิทานของลูกฟรี' : 'Create Your Child\'s Free Story'}
+          <BookOpen className="w-5 h-5" /> {th ? 'เข้าร่วมทดลองใช้สำหรับผู้ปกครอง' : 'Join the Parent Beta'}
         </button>
       </div>
       {scrub && (
@@ -206,7 +206,7 @@ function Hero({ th }: { th: boolean }) {
         <div className="container mx-auto text-center">
           <div className="flex items-center justify-center gap-2.5 text-sm font-medium tracking-wide">
             <Gift className="w-4 h-4" />
-            <span>{th ? 'เปิดตัวพิเศษ: สร้างนิทานเล่มแรกฟรี' : 'Launch special: your first storybook is free'}</span>
+            <span>{th ? 'ทดลองใช้สำหรับผู้ปกครอง: อนุมัติแล้วสร้างได้สูงสุด 6 เล่ม' : 'Parent beta: approved accounts can create up to 6 books'}</span>
           </div>
         </div>
       </div>
@@ -281,7 +281,7 @@ function Hero({ th }: { th: boolean }) {
               <div className="flex">{[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 text-yellow-300 fill-current" />)}</div>
             </div>
             <p className="text-sm font-medium">
-              {th ? 'นิทาน 11 หน้า · สองภาษา · เสียงอ่าน · PDF · เล่มแรกฟรี' : '11 pages · Bilingual · Narration · PDF · First book free'}
+              {th ? 'เนื้อเรื่อง 10 หน้า + ปก · สองภาษา · เสียงอ่าน · PDF' : '10 story pages + cover · Bilingual · Narration · PDF'}
             </p>
           </div>
 
@@ -291,7 +291,7 @@ function Hero({ th }: { th: boolean }) {
               onClick={() => navigate('/create')}
               className="inline-flex items-center justify-center gap-2 text-center bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-6 sm:px-10 py-5 sm:py-6 text-lg sm:text-xl font-bold rounded-full shadow-2xl hover:shadow-3xl transform hover:scale-110 transition-all duration-300 border-4 border-white/20 w-full sm:w-auto"
             >
-              <BookOpen className="w-5 h-5" /> {th ? 'สร้างนิทานของลูกฟรีเลย' : 'Create Your Child\'s Free Story'}
+              <BookOpen className="w-5 h-5" /> {th ? 'สมัครทดลองใช้สำหรับผู้ปกครอง' : 'Request Parent Beta Access'}
             </button>
           </div>
 
@@ -299,7 +299,7 @@ function Hero({ th }: { th: boolean }) {
           <div className="flex items-center justify-center lg:justify-start gap-8 text-sm text-blue-100 pt-6 flex-wrap">
             {[
               th ? 'ใช้ได้ทุกอุปกรณ์' : 'Works on Any Device',
-              th ? 'เล่มแรกฟรี ไม่ต้องใส่บัตร' : 'First book free - no card needed',
+              th ? 'อนุมัติบัญชีก่อนสร้าง • ไม่ต้องใส่บัตร' : 'Account approval required • no card needed',
             ].map((s, i) => (
               <div key={i} className="flex items-center gap-2 hover:scale-105 transition-transform duration-300">
                 <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
@@ -383,7 +383,7 @@ function FourWays({ th }: { th: boolean }) {
         </div>
 
         <button onClick={() => navigate('/create')} className="mt-12 inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-10 py-4 text-lg font-bold rounded-full shadow-2xl hover:scale-105 transition-all duration-300">
-          <Palette className="w-5 h-5" /> {th ? 'ลองสไตล์ของลูกฟรีเลย' : 'Try Your Child\'s Style Free'}
+          <Palette className="w-5 h-5" /> {th ? 'สมัครทดลองใช้สำหรับผู้ปกครอง' : 'Join the Parent Beta'}
         </button>
       </div>
     </section>
@@ -472,7 +472,7 @@ function BookGallery({ th }: { th: boolean }) {
           <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-8 max-w-2xl mx-auto shadow-2xl">
             <h3 className="text-2xl font-bold text-white mb-4">{th ? 'เล่มต่อไปคือของลูกคุณ!' : 'Your Child\'s Story Could Be Next!'}</h3>
             <p className="text-purple-100 mb-6">
-              {th ? 'อ่านเล่มตัวอย่างเต็ม ๆ ได้เลย หรือเริ่มสร้างเล่มของลูกคุณฟรี' : 'Read the full example book, or start your child\'s free book now'}
+              {th ? 'อ่านเล่มตัวอย่างเต็ม ๆ หรือสมัครทดลองใช้เพื่อสร้างได้สูงสุด 6 เล่ม' : 'Read the full example book, or join the beta to create up to 6 books'}
             </p>
             <div className="flex gap-3 justify-center flex-wrap">
               <Link to={DEMO.share} className="inline-flex items-center gap-2 bg-white/20 border border-white/40 text-white hover:bg-white/30 px-8 py-3 text-lg font-bold rounded-full shadow-lg hover:scale-105 transition-all duration-300">
@@ -585,7 +585,7 @@ function ProductDemo({ th }: { th: boolean }) {
           <div className="text-center mt-16">
             <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-8 shadow-2xl">
               <h3 className="text-3xl font-bold text-white mb-4">{th ? 'พร้อมเห็นลูกเป็นฮีโร่หรือยัง?' : 'Ready to See Your Child Become the Hero?'}</h3>
-              <p className="text-purple-100 text-lg mb-6">{th ? 'เล่มแรกฟรี ใช้เวลาแค่ 10 นาที' : 'The first book is free and takes just 10 minutes'}</p>
+              <p className="text-purple-100 text-lg mb-6">{th ? 'บัญชีที่อนุมัติแล้วสร้างได้สูงสุด 6 เล่ม' : 'Approved accounts can create up to 6 books'}</p>
               <button onClick={() => navigate('/create')} className="bg-white text-purple-600 hover:bg-gray-50 rounded-full px-8 py-4 text-lg font-semibold shadow-xl hover:scale-105 transition-all duration-300 inline-flex items-center">
                 {th ? 'เริ่มสร้างนิทานเลย' : 'Start Creating Stories Now'}
                 <ArrowRight className="w-5 h-5 ml-2" />
@@ -701,7 +701,7 @@ function ValueStack({ th }: { th: boolean }) {
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 font-playfair">
             {th ? 'ทุกอย่างที่ได้รับ ' : 'Everything You Get '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-emerald-500">{th ? 'ฟรี ในเล่มแรก' : 'FREE in Your First Book'}</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-emerald-500">{th ? 'ในสิทธิ์ทดลองใช้' : 'in Your Beta Access'}</span>
           </h2>
           <p className="text-xl text-gray-600">{th ? 'ชุดนิทานครบวงจรมูลค่ารวมกว่า ฿2,440' : 'A complete storybook package worth over ฿2,440'}</p>
         </div>
@@ -709,7 +709,7 @@ function ValueStack({ th }: { th: boolean }) {
         <div className="rounded-3xl overflow-hidden shadow-2xl border border-purple-100">
           <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-8 text-center text-white">
             <h3 className="text-2xl font-bold mb-1">{th ? 'แพ็กเกจนิทานฮีโร่ครบชุด' : 'Complete Hero Storybook Package'}</h3>
-            <p className="text-purple-100">{th ? 'ทุกอย่างที่ลูกน้อยต้องมีในนิทานเล่มแรก' : 'Everything your little hero needs in their first book'}</p>
+            <p className="text-purple-100">{th ? 'ทุกอย่างที่ลูกน้อยต้องมีในนิทาน สูงสุด 6 เล่ม' : 'Everything your little hero needs across up to 6 books'}</p>
           </div>
           <div className="bg-white p-8">
             <div className="space-y-4">
@@ -736,9 +736,9 @@ function ValueStack({ th }: { th: boolean }) {
                 <span className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-emerald-500">{th ? 'ฟรี' : 'FREE'}</span>
               </p>
               <button onClick={() => scrollTo('order')} className="mt-6 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-10 py-4 text-lg font-bold rounded-full shadow-2xl hover:scale-105 transition-all duration-300 w-full sm:w-auto">
-                {th ? 'รับเล่มฟรีของหนูเลย' : 'Claim My Free Book Now'}
+                {th ? 'สมัครและขออนุมัติ' : 'Sign In and Request Access'}
               </button>
-              <p className="text-gray-400 text-sm mt-3">{th ? 'ไม่ต้องใส่บัตร • เริ่มได้ทันที' : 'No card needed • Instant access'}</p>
+              <p className="text-gray-400 text-sm mt-3">{th ? 'ไม่ต้องใส่บัตร • ทีมงานตรวจสอบก่อนเริ่มสร้าง' : 'No card needed • Team approval before generation'}</p>
             </div>
           </div>
         </div>
@@ -747,7 +747,7 @@ function ValueStack({ th }: { th: boolean }) {
           {[
             { icon: <Shield className="w-6 h-6" />, t: th ? 'รูปลูกปลอดภัย' : 'Photos Kept Safe' },
             { icon: <Clock className="w-6 h-6" />, t: th ? 'เสร็จใน 10 นาที' : 'Ready in 10 Minutes' },
-            { icon: <Gift className="w-6 h-6" />, t: th ? 'เล่มแรกฟรีจริง' : 'First Book Truly Free' },
+            { icon: <Gift className="w-6 h-6" />, t: th ? 'สร้างได้สูงสุด 6 เล่ม' : 'Up to 6 Beta Books' },
           ].map((g, i) => (
             <div key={i} className="flex flex-col items-center gap-2 text-gray-600">
               <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center">{g.icon}</div>
@@ -837,16 +837,16 @@ function Testimonials({ th }: { th: boolean }) {
 function FAQ({ th }: { th: boolean }) {
   const faqs: [string, string][] = th ? [
     ['รูปลูกของฉันปลอดภัยไหม?', 'รูปต้นฉบับเป็นส่วนตัวและใช้สร้างตัวละครเท่านั้น หนังสือใหม่เป็นส่วนตัวโดยค่าเริ่มต้น และคุณลบข้อมูลเด็กได้เองทุกเมื่อ'],
-    ['ใช้เวลานานแค่ไหน?', 'ประมาณ 10 นาทีต่อเล่ม อัปโหลดรูป เลือกนิทาน แล้ว AI เขียนเรื่องและวาดภาพ 11 หน้าให้อัตโนมัติ'],
+    ['ใช้เวลานานแค่ไหน?', 'ประมาณ 10 นาทีต่อเล่ม อัปโหลดรูป เลือกนิทาน แล้ว AI สร้างเนื้อเรื่อง 10 หน้าและปกให้อัตโนมัติ'],
     ['หน้าลูกจะเหมือนจริงไหม?', 'AI สร้างตัวละครนิทานจากรูปจริงของลูก คุณเห็นตัวอย่างก่อนและสร้างตัวเลือกได้สูงสุด 3 แบบ'],
-    ['เล่มแรกฟรีจริงไหม? ต้องใส่บัตรไหม?', 'ฟรีจริง 100% ไม่ต้องใส่บัตรเครดิต ล็อกอินด้วยอีเมลแล้วเริ่มได้เลย'],
+    ['ทดลองใช้ได้กี่เล่ม? ต้องใส่บัตรไหม?', 'บัญชีผู้ปกครองที่ผ่านการอนุมัติสร้างได้สูงสุด 6 เล่ม ไม่ต้องใส่บัตรเครดิต'],
     ['มีภาษาอะไรบ้าง?', 'ทุกหน้ามีภาษาไทยและอังกฤษคู่กัน พร้อมเสียงอ่านทั้งสองภาษา'],
     ['สั่งพิมพ์เป็นเล่มจริงได้ไหม?', 'ได้ค่ะ กดสนใจสั่งพิมพ์ในหน้านิทาน ทีมงานจะติดต่อกลับเรื่องหนังสือปกแข็งส่งถึงบ้าน'],
   ] : [
     ['Is my child\'s photo safe?', 'The original photo is private and used only for character creation. New books are private by default, and you can delete child data yourself at any time.'],
-    ['How long does it take?', 'About 10 minutes per book. Upload a photo, pick a tale, and AI writes and illustrates all 11 pages automatically.'],
+    ['How long does it take?', 'About 10 minutes per book. Upload a photo, pick a tale, and AI creates 10 story pages plus a cover automatically.'],
     ['Will it really look like my child?', 'AI creates a storybook character from the real photo. You preview first and can create up to 3 versions.'],
-    ['Is the first book really free? Card needed?', '100% free, no credit card. Just sign in by email and start.'],
+    ['How many beta books can I make? Card needed?', 'Approved parent accounts can create up to 6 books. No credit card is required.'],
     ['Which languages?', 'Every page pairs Thai and English, with narration audio in both languages.'],
     ['Can I order a printed copy?', 'Yes - tap the print-interest button on your finished book and our team will contact you about a hardcover.'],
   ];
@@ -880,108 +880,46 @@ function FAQ({ th }: { th: boolean }) {
 /* ============================ ORDER / PRICING ============================ */
 function Order({ th }: { th: boolean }) {
   const navigate = useNavigate();
-  const [done, setDone] = useState('');
-  const [busy, setBusy] = useState('');
-  const join = async (pkg: string) => {
-    setBusy(pkg);
-    try {
-      const { api } = await import('../api');
-      await api.packageInterest(pkg, '');
-      setDone(pkg);
-    } catch { navigate('/create'); }
-    finally { setBusy(''); }
-  };
   return (
     <section id="order" className="py-20 bg-gradient-to-br from-purple-50 via-white to-blue-50">
-      <div className="container mx-auto px-4 max-w-5xl">
+      <div className="container mx-auto px-4 max-w-3xl">
         <div className="text-center mb-14">
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-100 to-red-100 rounded-full px-6 py-3 mb-6">
-            <Zap className="w-5 h-5 text-orange-600" />
-            <span className="text-orange-700 font-semibold uppercase text-sm tracking-wide">{th ? 'ข้อเสนอเปิดตัว' : 'Limited Launch Offer'}</span>
+            <Shield className="w-5 h-5 text-orange-600" />
+            <span className="text-orange-700 font-semibold uppercase text-sm tracking-wide">{th ? 'ทดลองใช้สำหรับผู้ปกครอง' : 'Parent Beta Access'}</span>
           </div>
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 font-playfair">
-            {th ? 'เปลี่ยนลูกน้อยเป็น' : 'Transform Your Child Into'}<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">{th ? 'ฮีโร่ในนิทานของตัวเอง' : 'The Hero of Their Own Story'}</span>
+            {th ? 'สร้างชั้นหนังสือเล็ก ๆ' : 'Build a Little Library'}<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">{th ? 'ที่ลูกเป็นฮีโร่' : 'Where Your Child Is the Hero'}</span>
           </h2>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 items-stretch">
-          {/* Free */}
-          <div className="bg-white rounded-3xl shadow-xl p-8 flex flex-col border border-gray-100">
+        <div className="max-w-xl mx-auto">
+          <div className="relative bg-white rounded-3xl shadow-2xl p-8 flex flex-col border-4 border-purple-500">
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-6 py-2 rounded-full shadow-lg whitespace-nowrap">
+              <Shield className="w-3.5 h-3.5" /> {th ? 'อนุมัติโดยทีมงาน' : 'TEAM APPROVED'}
+            </div>
             <div className="text-center mb-6">
-              <Sprout className="w-9 h-9 mx-auto mb-2 text-green-500" strokeWidth={1.5} />
-              <h3 className="text-xl font-bold text-gray-900">{th ? 'เล่มแรก' : 'First Book'}</h3>
+              <BookOpen className="w-10 h-10 mx-auto mb-3 text-purple-500" strokeWidth={1.5} />
+              <h3 className="text-2xl font-bold text-gray-900">{th ? 'สิทธิ์ทดลองใช้ 6 เล่ม' : '6-Book Beta Access'}</h3>
               <div className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-emerald-500 my-3">{th ? 'ฟรี' : 'FREE'}</div>
-              <p className="text-gray-500 text-sm">{th ? 'ไม่ต้องใส่บัตร • เริ่มได้ทันที' : 'No card • Instant access'}</p>
+              <p className="text-gray-500 text-sm">{th ? 'ไม่ต้องใส่บัตร • ตรวจสอบบัญชีก่อนเริ่มสร้าง' : 'No card • Account review required before creating'}</p>
             </div>
             <ul className="space-y-3 text-gray-700 flex-1">
-              {[th ? 'นิทาน 1 เล่ม 11 ภาพวาด' : '1 book, 11 illustrations', th ? 'สองภาษา + เสียงอ่าน' : 'Bilingual + narration', th ? 'PDF + ลิงก์แชร์' : 'PDF + share link'].map((f, i) => (
+              {[th ? 'สร้างนิทานได้สูงสุด 6 เล่มต่อบัญชี' : 'Up to 6 books per parent account', th ? 'แต่ละเล่มมีเนื้อเรื่องสูงสุด 10 หน้า + ปก' : 'Up to 10 story pages plus a cover per book', th ? 'สองภาษา + เสียงอ่าน + PDF' : 'Bilingual + narration + PDF', th ? 'หนังสือเป็นส่วนตัว และเลือกแชร์กับครอบครัวได้' : 'Private books with optional family sharing'].map((f, i) => (
                 <li key={i} className="flex items-center gap-2"><CheckCircle className="w-5 h-5 text-green-500 shrink-0" />{f}</li>
               ))}
             </ul>
-            <button onClick={() => navigate('/create')} className="mt-8 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white py-4 font-bold rounded-full shadow-lg hover:scale-105 transition-all duration-300">
-              {th ? 'รับเล่มฟรี' : 'Get My Free Book'}
+            <button onClick={() => navigate('/create')} className="mt-8 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-4 font-bold rounded-full shadow-lg hover:scale-105 transition-all duration-300">
+              {th ? 'สมัครและขออนุมัติ' : 'Sign In and Request Access'}
             </button>
-          </div>
-
-          {/* Starter — featured */}
-          <div className="relative bg-white rounded-3xl shadow-2xl p-8 flex flex-col border-4 border-purple-500 md:scale-105">
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-6 py-2 rounded-full shadow-lg whitespace-nowrap">
-              <Star className="w-3.5 h-3.5 fill-current" /> {th ? 'คุ้มที่สุด' : 'BEST VALUE'}
-            </div>
-            <div className="text-center mb-6 pt-2">
-              <BookOpen className="w-9 h-9 mx-auto mb-2 text-purple-500" strokeWidth={1.5} />
-              <h3 className="text-xl font-bold text-gray-900">{th ? 'แพ็กนักเล่านิทาน' : 'Storyteller Pack'}</h3>
-              <div className="my-3">
-                <span className="text-xl text-gray-400 line-through mr-2">฿1,590</span>
-                <span className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">฿790</span>
-              </div>
-              <p className="text-gray-500 text-sm">{th ? 'จ่ายครั้งเดียว • 5 เล่ม' : 'One-time • 5 books'}</p>
-            </div>
-            <ul className="space-y-3 text-gray-700 flex-1">
-              {[th ? 'นิทาน 5 เล่ม (เล่มละ ฿158)' : '5 books (฿158 each)', th ? 'ทุกฟีเจอร์ของเล่มฟรี' : 'Everything in Free', th ? 'หลายโปรไฟล์ลูกได้' : 'Multiple child profiles'].map((f, i) => (
-                <li key={i} className="flex items-center gap-2"><CheckCircle className="w-5 h-5 text-purple-500 shrink-0" />{f}</li>
-              ))}
-            </ul>
-            {done === 'starter' ? (
-              <div className="mt-8 flex items-center justify-center gap-2 font-bold text-green-600"><Heart className="w-4 h-4 fill-current" /> {th ? 'รับสิทธิ์แล้ว! ทีมงานจะติดต่อไป' : 'You\'re on the list!'}</div>
-            ) : (
-              <button onClick={() => join('starter')} disabled={!!busy} className="mt-8 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-4 font-bold rounded-full shadow-lg hover:scale-105 transition-all duration-300 disabled:opacity-60">
-                <Bell className="w-4 h-4 inline mr-1.5 -mt-0.5" /> {th ? 'จองส่วนลดเปิดตัว' : 'Reserve Launch Discount'}
-              </button>
-            )}
-          </div>
-
-          {/* Premium */}
-          <div className="bg-white rounded-3xl shadow-xl p-8 flex flex-col border border-gray-100">
-            <div className="text-center mb-6">
-              <Crown className="w-9 h-9 mx-auto mb-2 text-amber-500" strokeWidth={1.5} />
-              <h3 className="text-xl font-bold text-gray-900">{th ? 'แพ็กครอบครัวฮีโร่' : 'Hero Family Pack'}</h3>
-              <div className="my-3">
-                <span className="text-xl text-gray-400 line-through mr-2">฿2,990</span>
-                <span className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-500">฿1,290</span>
-              </div>
-              <p className="text-gray-500 text-sm">{th ? 'จ่ายครั้งเดียว • 10 เล่ม' : 'One-time • 10 books'}</p>
-            </div>
-            <ul className="space-y-3 text-gray-700 flex-1">
-              {[th ? 'นิทาน 10 เล่ม (เล่มละ ฿129)' : '10 books (฿129 each)', th ? 'ส่วนลดพิมพ์เล่มจริง 20%' : '20% off printed hardcovers', th ? 'ซัพพอร์ตด่วนทาง LINE' : 'Priority LINE support'].map((f, i) => (
-                <li key={i} className="flex items-center gap-2"><CheckCircle className="w-5 h-5 text-amber-500 shrink-0" />{f}</li>
-              ))}
-            </ul>
-            {done === 'premium' ? (
-              <div className="mt-8 flex items-center justify-center gap-2 font-bold text-green-600"><Heart className="w-4 h-4 fill-current" /> {th ? 'รับสิทธิ์แล้ว! ทีมงานจะติดต่อไป' : 'You\'re on the list!'}</div>
-            ) : (
-              <button onClick={() => join('premium')} disabled={!!busy} className="mt-8 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white py-4 font-bold rounded-full shadow-lg hover:scale-105 transition-all duration-300 disabled:opacity-60">
-                <Bell className="w-4 h-4 inline mr-1.5 -mt-0.5" /> {th ? 'จองส่วนลดเปิดตัว' : 'Reserve Launch Discount'}
-              </button>
-            )}
           </div>
         </div>
 
         <div className="flex items-center justify-center gap-10 mt-12 flex-wrap text-gray-600">
           {[
             { icon: <Shield className="w-5 h-5" />, t: th ? 'ข้อมูลปลอดภัย' : 'Secure & Private' },
-            { icon: <Zap className="w-5 h-5" />, t: th ? 'เริ่มได้ทันที' : 'Instant Access' },
+            { icon: <Clock className="w-5 h-5" />, t: th ? 'ตรวจสอบบัญชีก่อนสร้าง' : 'Approval Before Generation' },
             { icon: <Heart className="w-5 h-5" />, t: th ? 'ทำด้วยรักเพื่อครอบครัวไทย' : 'Made with love for Thai families' },
           ].map((g, i) => (
             <div key={i} className="flex items-center gap-2 text-sm font-medium">
@@ -1005,13 +943,13 @@ function Footer({ th }: { th: boolean }) {
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">{th ? 'การเป็นฮีโร่' : 'Being the Hero'}</span>
         </h2>
         <p className="text-gray-400 max-w-xl mx-auto mb-8">
-          {th ? 'เปลี่ยนเวลาหน้าจอเป็นเวลาแห่งจินตนาการ เริ่มจากนิทานเล่มแรกฟรีวันนี้' : 'Turn screen time into imagination time. Start with a free first book today.'}
+          {th ? 'เปลี่ยนเวลาหน้าจอเป็นเวลาแห่งจินตนาการ สมัครทดลองใช้สำหรับผู้ปกครองวันนี้' : 'Turn screen time into imagination time. Join the parent beta today.'}
         </p>
         <button onClick={() => navigate('/create')} className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-10 py-4 text-lg font-bold rounded-full shadow-2xl hover:scale-105 transition-all duration-300">
-          {th ? 'รับเล่มฟรีเลย' : 'Get Your Free Book'}
+          {th ? 'สมัครและขออนุมัติ' : 'Request Beta Access'}
         </button>
         <p className="text-gray-500 text-sm mt-4 flex items-center justify-center gap-1.5">
-          <CheckCircle className="w-4 h-4 text-green-500" /> {th ? 'เล่มแรกฟรี • ไม่ต้องใส่บัตร • เสร็จใน 10 นาที' : 'First book free • No card • Ready in 10 minutes'}
+          <CheckCircle className="w-4 h-4 text-green-500" /> {th ? 'สูงสุด 6 เล่ม • ไม่ต้องใส่บัตร • ต้องผ่านการอนุมัติ' : 'Up to 6 books • No card • Approval required'}
         </p>
       </div>
       <div className="container mx-auto px-4 py-12 grid md:grid-cols-4 gap-8">

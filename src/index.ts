@@ -177,6 +177,10 @@ async function ensureSchema(db: D1Database) {
     db.prepare(`CREATE TABLE IF NOT EXISTS user_credits (
       email TEXT PRIMARY KEY,
       credits INTEGER NOT NULL DEFAULT 0,
+      approved INTEGER NOT NULL DEFAULT 0,
+      approved_at TEXT,
+      approved_by TEXT,
+      banned INTEGER NOT NULL DEFAULT 0,
       created_at TEXT DEFAULT (datetime('now'))
     )`),
     db.prepare(`CREATE TABLE IF NOT EXISTS credit_ledger (
@@ -234,6 +238,9 @@ async function ensureSchema(db: D1Database) {
     'ALTER TABLE children ADD COLUMN guardian_consent_at TEXT',
     'ALTER TABLE children ADD COLUMN privacy_version TEXT',
     'ALTER TABLE user_credits ADD COLUMN banned INTEGER DEFAULT 0',
+    'ALTER TABLE user_credits ADD COLUMN approved INTEGER DEFAULT 0',
+    'ALTER TABLE user_credits ADD COLUMN approved_at TEXT',
+    'ALTER TABLE user_credits ADD COLUMN approved_by TEXT',
   ]) {
     try { await db.prepare(sql).run(); } catch { /* column already exists */ }
   }
@@ -242,26 +249,28 @@ async function ensureSchema(db: D1Database) {
 
 // Accounts allowed unlimited books (owner/testing). Everyone else: credit system.
 const OWNER_EMAILS = new Set(['yoniwe@gmail.com']);
+const PARENT_BOOK_LIMIT = 6;
 
 const uid = () => crypto.randomUUID();
 
 // =================================================================
-// == Credits: 1 credit = 1 book. New users get 1 welcome credit.  ==
+// == Parent access: owner approval + a hard six-book allowance.   ==
 // =================================================================
 
 const norm = (email: string) => String(email).toLowerCase().trim();
 
-/** Ensure the user has a credits row (first touch grants the welcome credit). */
-async function initCredits(db: D1Database, email: string): Promise<void> {
+/** Ensure the account exists. New parent accounts wait for owner approval. */
+async function initCredits(db: D1Database, email: string): Promise<boolean> {
   const e = norm(email);
+  const owner = OWNER_EMAILS.has(e);
   const r = await db.prepare(
-    'INSERT INTO user_credits (email, credits) VALUES (?1, 1) ON CONFLICT(email) DO NOTHING'
-  ).bind(e).run();
-  if (r.meta?.changes) {
-    await db.prepare(
-      'INSERT INTO credit_ledger (id, email, delta, reason) VALUES (?1, ?2, 1, ?3)'
-    ).bind(uid(), e, 'welcome credit').run();
+    'INSERT INTO user_credits (email, credits, approved) VALUES (?1, 0, ?2) ON CONFLICT(email) DO NOTHING'
+  ).bind(e, owner ? 1 : 0).run();
+  if (owner) {
+    await db.prepare("UPDATE user_credits SET approved = 1, approved_at = COALESCE(approved_at, datetime('now')), approved_by = COALESCE(approved_by, 'system') WHERE email = ?1")
+      .bind(e).run();
   }
+  return !!r.meta?.changes;
 }
 
 async function getCredits(db: D1Database, email: string): Promise<number> {
@@ -271,13 +280,45 @@ async function getCredits(db: D1Database, email: string): Promise<number> {
   return row?.credits ?? 0;
 }
 
+async function getBookCount(db: D1Database, email: string): Promise<number> {
+  const row = await db.prepare('SELECT COUNT(*) AS n FROM books WHERE lower(user_email) = ?1')
+    .bind(norm(email)).first<any>();
+  return Number(row?.n || 0);
+}
+
+async function getAccountAccess(db: D1Database, email: string) {
+  const e = norm(email);
+  await initCredits(db, e);
+  const owner = OWNER_EMAILS.has(e);
+  const [row, booksUsed] = await Promise.all([
+    db.prepare('SELECT credits, approved, approved_at FROM user_credits WHERE email = ?1').bind(e).first<any>(),
+    getBookCount(db, e),
+  ]);
+  const booksRemaining = owner ? null : Math.max(0, PARENT_BOOK_LIMIT - booksUsed);
+  return {
+    approved: owner || !!row?.approved,
+    approvedAt: row?.approved_at || null,
+    unlimited: owner,
+    bookLimit: owner ? null : PARENT_BOOK_LIMIT,
+    booksUsed,
+    booksRemaining,
+    credits: owner ? 9999 : Math.min(Math.max(0, Number(row?.credits || 0)), booksRemaining || 0),
+  };
+}
+
+async function isApproved(db: D1Database, email: string): Promise<boolean> {
+  return (await getAccountAccess(db, email)).approved;
+}
+
 /** Atomically spend one credit. Returns false if the balance was empty. */
 async function spendCredit(db: D1Database, email: string): Promise<boolean> {
   const e = norm(email);
   await initCredits(db, e);
   const r = await db.prepare(
-    'UPDATE user_credits SET credits = credits - 1 WHERE email = ?1 AND credits >= 1'
-  ).bind(e).run();
+    `UPDATE user_credits SET credits = credits - 1
+      WHERE email = ?1 AND approved = 1 AND credits >= 1
+        AND (SELECT COUNT(*) FROM books WHERE lower(user_email) = ?1) < ?2`
+  ).bind(e, PARENT_BOOK_LIMIT).run();
   if (!(r.meta?.changes ?? 0)) return false;
   await db.prepare(
     'INSERT INTO credit_ledger (id, email, delta, reason) VALUES (?1, ?2, -1, ?3)'
@@ -289,9 +330,29 @@ async function spendCredit(db: D1Database, email: string): Promise<boolean> {
 async function refundCredit(db: D1Database, email: string, reason: string): Promise<void> {
   const e = norm(email);
   await db.batch([
-    db.prepare('UPDATE user_credits SET credits = credits + 1 WHERE email = ?1').bind(e),
+    db.prepare(`UPDATE user_credits
+      SET credits = MIN(MAX(0, ?2 - (SELECT COUNT(*) FROM books WHERE lower(user_email) = ?1)), credits + 1)
+      WHERE email = ?1`).bind(e, PARENT_BOOK_LIMIT),
     db.prepare('INSERT INTO credit_ledger (id, email, delta, reason) VALUES (?1, ?2, 1, ?3)')
       .bind(uid(), e, reason),
+  ]);
+}
+
+async function setApproved(db: D1Database, email: string, approved: boolean, adminEmail: string): Promise<void> {
+  const e = norm(email);
+  await initCredits(db, e);
+  const booksUsed = await getBookCount(db, e);
+  const nextCredits = approved ? Math.max(0, PARENT_BOOK_LIMIT - booksUsed) : 0;
+  const previous = await db.prepare('SELECT credits FROM user_credits WHERE email = ?1').bind(e).first<any>();
+  const delta = nextCredits - Number(previous?.credits || 0);
+  await db.batch([
+    db.prepare(`UPDATE user_credits
+      SET approved = ?1, credits = ?2,
+          approved_at = CASE WHEN ?1 = 1 THEN datetime('now') ELSE NULL END,
+          approved_by = CASE WHEN ?1 = 1 THEN ?3 ELSE NULL END
+      WHERE email = ?4`).bind(approved ? 1 : 0, nextCredits, norm(adminEmail), e),
+    db.prepare('INSERT INTO credit_ledger (id, email, delta, reason, admin_email) VALUES (?1, ?2, ?3, ?4, ?5)')
+      .bind(uid(), e, delta, approved ? `account approved: ${PARENT_BOOK_LIMIT}-book beta allowance` : 'account approval revoked', norm(adminEmail)),
   ]);
 }
 
@@ -415,9 +476,18 @@ const appAuth = async (c: any, next: () => Promise<void>) => {
   await ensureSchema(c.env.DB);
   const resolved = await sessionUser(c);
   if (!resolved) return c.json({ error: 'Unauthorized' }, 401);
+  await initCredits(c.env.DB, resolved.email);
   // Banned accounts are locked out of every authenticated action.
   if (await isBanned(c.env.DB, resolved.email)) return c.json({ error: 'account_banned' }, 403);
   c.set('user', resolved);
+  return next();
+};
+
+const approvedOnly = async (c: any, next: () => Promise<void>) => {
+  const user = c.get('user');
+  if (!user || !(await isApproved(c.env.DB, user.email))) {
+    return c.json({ error: 'account_pending' }, 403);
+  }
   return next();
 };
 
@@ -443,6 +513,37 @@ function bookReadyEmailHtml(origin: string, book: any): string {
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+async function notifyNewAccount(env: Bindings, origin: string, email: string) {
+  const account = escapeHtml(norm(email));
+  const adminUrl = `${origin}/admin`;
+  const html = `<div style="font-family:'Segoe UI',sans-serif;max-width:480px;margin:0 auto;background:#faf5ff;border-radius:18px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#9333ea,#db2777);padding:22px;text-align:center;color:#fff">
+      <div style="font-size:21px;font-weight:800">New StoryHero parent account</div>
+      <div style="font-size:13px;opacity:.9">Approval is required before generation</div>
+    </div>
+    <div style="padding:24px;text-align:center">
+      <div style="font-size:17px;font-weight:800;color:#111827">${account}</div>
+      <p style="color:#6b7280;font-size:13px;line-height:1.7">Review this parent in the admin dashboard. Approval grants the remaining portion of the six-book beta allowance.</p>
+      <a href="${adminUrl}" style="display:inline-block;margin-top:10px;background:linear-gradient(135deg,#9333ea,#db2777);color:#fff;font-weight:800;padding:13px 30px;border-radius:999px;text-decoration:none">Review account</a>
+    </div>
+  </div>`;
+  await Promise.all([...OWNER_EMAILS].map((owner) => sendEmail(env, owner, `Approve StoryHero parent: ${norm(email)}`, html)));
+}
+
+async function notifyAccountApproved(env: Bindings, origin: string, email: string) {
+  const html = `<div style="font-family:'Segoe UI',sans-serif;max-width:480px;margin:0 auto;background:#faf5ff;border-radius:18px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#9333ea,#db2777);padding:22px;text-align:center;color:#fff">
+      <div style="font-size:22px;font-weight:800">บัญชี StoryHero ได้รับการอนุมัติแล้ว!</div>
+      <div style="font-size:13px;opacity:.9">Your StoryHero account is approved</div>
+    </div>
+    <div style="padding:24px;text-align:center">
+      <p style="color:#4b5563;font-size:14px;line-height:1.8">ตอนนี้คุณสามารถสร้างนิทานได้สูงสุด ${PARENT_BOOK_LIMIT} เล่ม<br/>You can now create up to ${PARENT_BOOK_LIMIT} storybooks.</p>
+      <a href="${origin}/app" style="display:inline-block;margin-top:10px;background:linear-gradient(135deg,#9333ea,#db2777);color:#fff;font-weight:800;padding:13px 30px;border-radius:999px;text-decoration:none">เริ่มสร้างนิทาน / Start creating</a>
+    </div>
+  </div>`;
+  await sendEmail(env, norm(email), 'บัญชี StoryHero ได้รับการอนุมัติแล้ว / Your account is approved', html);
 }
 
 /** Fire-and-forget "your book is ready" email; guarded by books.ready_email_sent. */
@@ -484,9 +585,16 @@ app.post('/api/auth/google', async (c) => {
   try {
     const user = await verifyGoogleCredential(String(credential), c.env.GOOGLE_CLIENT_ID);
     if (await isBanned(c.env.DB, user.email)) return c.json({ error: 'account_banned' }, 403);
-    await initCredits(c.env.DB, user.email);
+    const created = await initCredits(c.env.DB, user.email);
     await createSession(c, user.email);
-    return c.json({ user });
+    if (created && !OWNER_EMAILS.has(norm(user.email))) {
+      c.executionCtx.waitUntil(
+        notifyNewAccount(c.env, new URL(c.req.url).origin, user.email).catch((error) =>
+          console.error("Failed to send new-account notification", error),
+        ),
+      );
+    }
+    return c.json({ user: { ...user, ...(await getAccountAccess(c.env.DB, user.email)) } });
   } catch (error: any) {
     return c.json({ error: `Google login failed: ${String(error?.message || error).slice(0, 160)}` }, 401);
   }
@@ -502,7 +610,8 @@ app.post('/api/dev/login', async (c) => {
 });
 
 app.get('/api/users/me', appAuth, async (c) => {
-  return c.json(c.get('user'));
+  const user = c.get('user');
+  return c.json({ ...user, ...(await getAccountAccess(c.env.DB, user.email)) });
 });
 
 app.delete('/api/users/me', appAuth, async (c) => {
@@ -605,7 +714,15 @@ app.post('/api/verify-otp', async (c) => {
     c.env.DB.prepare('DELETE FROM sessions WHERE expires_at < ?1').bind(now),
     c.env.DB.prepare('DELETE FROM otp_codes WHERE expires_at < ?1').bind(now - 3600),
   ]);
+  const created = await initCredits(c.env.DB, normalized);
   await createSession(c, normalized);
+  if (created && !OWNER_EMAILS.has(normalized)) {
+    c.executionCtx.waitUntil(
+      notifyNewAccount(c.env, new URL(c.req.url).origin, normalized).catch((error) =>
+        console.error("Failed to send new-account notification", error),
+      ),
+    );
+  }
   return c.json({ success: true }, 200);
 });
 
@@ -718,7 +835,7 @@ app.get('/api/children/:id/photo', appAuth, async (c) => {
   }
 });
 
-app.post('/api/children', appAuth, async (c) => {
+app.post('/api/children', appAuth, approvedOnly, async (c) => {
   await ensureSchema(c.env.DB);
   const user = c.get('user');
   const { name, age, gender, photo_b64, guardian_consent } = await c.req.json();
@@ -769,7 +886,7 @@ app.delete('/api/children/:id', appAuth, async (c) => {
 });
 
 // Generate (or regenerate) the storybook character sheet for a child
-app.post('/api/children/:id/hero', appAuth, async (c) => {
+app.post('/api/children/:id/hero', appAuth, approvedOnly, async (c) => {
   await ensureSchema(c.env.DB);
   const user = c.get('user');
   const child = await c.env.DB.prepare(
@@ -823,7 +940,7 @@ function clampReadingAge(value: unknown, fallback: unknown): number {
 }
 function clampPages(n: unknown): number {
   const v = Math.round(Number(n) || PAGE_COUNT);
-  return Math.max(6, Math.min(16, v));
+  return Math.max(6, Math.min(PAGE_COUNT, v));
 }
 
 function containsUnsafeParentMaterial(value: unknown): boolean {
@@ -832,7 +949,7 @@ function containsUnsafeParentMaterial(value: unknown): boolean {
 }
 
 // Create book: writes the story text (one AI call), sets up page rows
-app.post('/api/books', appAuth, async (c) => {
+app.post('/api/books', appAuth, approvedOnly, async (c) => {
   await ensureSchema(c.env.DB);
   const user = c.get('user');
   const { child_id, story_id, dedication, friend_name, art_style, mode, brief, theme, reading_level, reading_age, page_count, phonics_group, world: world_id, friend: friend_id, villain: villain_id } = await c.req.json();
@@ -862,6 +979,10 @@ app.post('/api/books', appAuth, async (c) => {
   // Refunded on any generation failure below. 'trial_limit' error keeps the
   // existing upgrade-modal behavior on the frontend.
   const charged = !OWNER_EMAILS.has(user.email);
+  const access = await getAccountAccess(c.env.DB, user.email);
+  if (charged && access.booksRemaining === 0) {
+    return c.json({ error: 'book_limit' }, 403);
+  }
   if (charged && !(await spendCredit(c.env.DB, user.email))) {
     return c.json({ error: 'trial_limit' }, 402);
   }
@@ -1046,7 +1167,7 @@ Return ONLY JSON:
 });
 
 // Illustrate the next pending page (client polls this until done)
-app.post('/api/books/:id/pages/next', appAuth, async (c) => {
+app.post('/api/books/:id/pages/next', appAuth, approvedOnly, async (c) => {
   await ensureSchema(c.env.DB);
   const user = c.get('user');
   const book = await c.env.DB.prepare(
@@ -1185,7 +1306,7 @@ app.post('/api/books/:id/share', appAuth, async (c) => {
 });
 
 // Generate (and cache) narration audio for one page. lang: 'th' | 'en'
-app.post('/api/books/:id/pages/:idx/audio', appAuth, async (c) => {
+app.post('/api/books/:id/pages/:idx/audio', appAuth, approvedOnly, async (c) => {
   await ensureSchema(c.env.DB);
   const user = c.get('user');
   const lang = (await c.req.json().catch(() => ({}))).lang === 'en' ? 'en' : 'th';
@@ -1216,8 +1337,7 @@ app.post('/api/books/:id/pages/:idx/audio', appAuth, async (c) => {
 app.get('/api/credits', appAuth, async (c) => {
   await ensureSchema(c.env.DB);
   const user = c.get('user');
-  if (OWNER_EMAILS.has(user.email)) return c.json({ credits: 9999, unlimited: true });
-  return c.json({ credits: await getCredits(c.env.DB, user.email), unlimited: false });
+  return c.json(await getAccountAccess(c.env.DB, user.email));
 });
 
 // =================================================================
@@ -1258,28 +1378,56 @@ app.get('/api/admin/higgsfield/callback', appAuth, adminOnly, async (c) => {
   }
 });
 
-// All users with credits + usage, newest activity first
+// All parent accounts, with pending approvals first.
 app.get('/api/admin/users', appAuth, adminOnly, async (c) => {
   await ensureSchema(c.env.DB);
   const rows = await c.env.DB.prepare(
     `SELECT
-       lower(b.user_email) AS email,
-       MAX(b.created_at) AS last_book_at,
-       COUNT(DISTINCT b.id) AS books,
-       (SELECT COUNT(*) FROM children ch WHERE lower(ch.user_email) = lower(b.user_email)) AS children,
-       COALESCE((SELECT credits FROM user_credits uc WHERE uc.email = lower(b.user_email)), 0) AS credits,
-       COALESCE((SELECT banned FROM user_credits uc WHERE uc.email = lower(b.user_email)), 0) AS banned,
-       (SELECT created_at FROM user_credits uc WHERE uc.email = lower(b.user_email)) AS signup
-     FROM books b GROUP BY lower(b.user_email)
-     UNION
-     SELECT uc.email, NULL, 0,
-       (SELECT COUNT(*) FROM children ch WHERE lower(ch.user_email) = uc.email),
-       uc.credits, uc.banned, uc.created_at
+       uc.email,
+       (SELECT MAX(b.created_at) FROM books b WHERE lower(b.user_email) = uc.email) AS last_book_at,
+       (SELECT COUNT(*) FROM books b WHERE lower(b.user_email) = uc.email) AS books,
+       MAX(0, ?1 - (SELECT COUNT(*) FROM books b WHERE lower(b.user_email) = uc.email)) AS books_remaining,
+       (SELECT COUNT(*) FROM children ch WHERE lower(ch.user_email) = uc.email) AS children,
+       uc.credits,
+       COALESCE(uc.approved, 0) AS approved,
+       uc.approved_at,
+       uc.approved_by,
+       COALESCE(uc.banned, 0) AS banned,
+       uc.created_at AS signup
      FROM user_credits uc
-     WHERE uc.email NOT IN (SELECT DISTINCT lower(user_email) FROM books)
-     ORDER BY last_book_at DESC`
-  ).all();
-  return c.json(rows.results);
+     ORDER BY
+       CASE WHEN COALESCE(uc.banned, 0) = 1 THEN 2 WHEN COALESCE(uc.approved, 0) = 0 THEN 0 ELSE 1 END,
+       uc.created_at DESC`
+  ).bind(PARENT_BOOK_LIMIT).all();
+  return c.json((rows.results || []).map((row: any) => {
+    const unlimited = OWNER_EMAILS.has(norm(row.email));
+    return {
+      ...row,
+      unlimited,
+      books_remaining: unlimited ? null : Number(row.books_remaining || 0),
+    };
+  }));
+});
+
+// Approve or revoke a parent account. Approval grants only the unused portion
+// of the hard six-book lifetime allowance.
+app.post('/api/admin/approve', appAuth, adminOnly, async (c) => {
+  await ensureSchema(c.env.DB);
+  const admin = c.get('user');
+  const { email, approved } = await c.req.json().catch(() => ({}));
+  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return c.json({ error: 'Invalid email' }, 400);
+  if (OWNER_EMAILS.has(norm(email))) return c.json({ error: 'Owner access cannot be changed' }, 400);
+  const existing = await c.env.DB.prepare('SELECT email FROM user_credits WHERE email = ?1').bind(norm(email)).first();
+  if (!existing) return c.json({ error: 'Account not found. The parent must sign in first.' }, 404);
+  await setApproved(c.env.DB, email, !!approved, admin.email);
+  if (approved) {
+    c.executionCtx.waitUntil(
+      notifyAccountApproved(c.env, new URL(c.req.url).origin, email).catch((error) =>
+        console.error("Failed to send account-approved notification", error),
+      ),
+    );
+  }
+  return c.json({ success: true, email: norm(email), ...(await getAccountAccess(c.env.DB, email)) });
 });
 
 // Ban or unban an account. {email, banned:boolean}
@@ -1312,12 +1460,17 @@ app.post('/api/admin/credits', appAuth, adminOnly, async (c) => {
   if (!d || Math.abs(d) > 1000) return c.json({ error: 'Delta must be a non-zero number up to ±1000' }, 400);
   const e = norm(email);
   await initCredits(c.env.DB, e);
-  // Never let a deduction push below zero
-  await c.env.DB.prepare('UPDATE user_credits SET credits = MAX(0, credits + ?1) WHERE email = ?2')
-    .bind(d, e).run();
+  if (OWNER_EMAILS.has(e)) return c.json({ error: 'Owner account is unlimited' }, 400);
+  const before = await getCredits(c.env.DB, e);
+  const booksUsed = await getBookCount(c.env.DB, e);
+  const ceiling = Math.max(0, PARENT_BOOK_LIMIT - booksUsed);
+  const after = Math.max(0, Math.min(ceiling, before + d));
+  const actualDelta = after - before;
+  await c.env.DB.prepare('UPDATE user_credits SET credits = ?1 WHERE email = ?2')
+    .bind(after, e).run();
   await c.env.DB.prepare(
     'INSERT INTO credit_ledger (id, email, delta, reason, admin_email) VALUES (?1, ?2, ?3, ?4, ?5)'
-  ).bind(uid(), e, d, String(reason || 'admin grant').slice(0, 120), admin.email).run();
+  ).bind(uid(), e, actualDelta, String(reason || 'admin adjustment').slice(0, 120), admin.email).run();
   const credits = await getCredits(c.env.DB, e);
   return c.json({ success: true, email: e, credits });
 });
