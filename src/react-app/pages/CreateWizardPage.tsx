@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { Camera, X, PenLine, ImagePlus, BookOpen, Palette, Crown, Check, Dices, SpellCheck2, Languages, Highlighter, Puzzle } from 'lucide-react';
+import { Camera, X, PenLine, ImagePlus, BookOpen, Palette, Crown, Check, Dices, SpellCheck2, Languages, Highlighter, Puzzle, ShieldCheck } from 'lucide-react';
 import { api, Child, Book, fileToResizedBase64 } from '../api';
 import { STORIES } from '../../shared/stories';
 import { ART_STYLES, DEFAULT_STYLE_ID } from '../../shared/styles';
@@ -146,6 +146,7 @@ export function CreateWizardPage() {
   const [readingAge, setReadingAge] = useState(5);
   const [gender, setGender] = useState<'boy' | 'girl'>('girl');
   const [photoB64, setPhotoB64] = useState('');
+  const [guardianConsent, setGuardianConsent] = useState(false);
   const [dedication, setDedication] = useState('');
   const [friendName, setFriendName] = useState('');
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -216,9 +217,10 @@ export function CreateWizardPage() {
       return;
     }
     if (!name.trim() || !photoB64) { setError(lang === 'th' ? 'กรุณากรอกชื่อและอัปโหลดรูป' : 'Please enter a name and upload a photo'); return; }
+    if (!guardianConsent) { setError(lang === 'th' ? 'กรุณายืนยันว่าคุณเป็นพ่อแม่หรือผู้ปกครองตามกฎหมาย' : 'Please confirm that you are the parent or legal guardian'); return; }
     try {
       setBusy(true);
-      const child = await api.createChild({ name: name.trim(), age, gender, photo_b64: photoB64 });
+      const child = await api.createChild({ name: name.trim(), age, gender, photo_b64: photoB64, guardian_consent: true });
       setSelectedChild(child);
       setStep(4);
       void makeHero(child);
@@ -595,6 +597,17 @@ export function CreateWizardPage() {
                   )}
                 </div>
                 <p className="privacy-note">{t('privacyNote')}</p>
+                <label className={`guardian-consent ${guardianConsent ? 'checked' : ''}`}>
+                  <input type="checkbox" checked={guardianConsent} onChange={(e) => setGuardianConsent(e.target.checked)} />
+                  <ShieldCheck size={22} aria-hidden="true" />
+                  <span>
+                    {lang === 'th'
+                      ? 'ฉันเป็นพ่อแม่หรือผู้ปกครองตามกฎหมายของเด็ก และยินยอมให้ StoryHero ประมวลผลรูปเพื่อสร้างตัวละครและหนังสือ รูปและหนังสือจะเป็นส่วนตัวโดยค่าเริ่มต้น'
+                      : 'I am this child’s parent or legal guardian, and I consent to StoryHero processing the photo to create the character and book. Photos and books are private by default.'}
+                    {' '}<Link to="/privacy" target="_blank">{lang === 'th' ? 'ความเป็นส่วนตัว' : 'Privacy'}</Link>
+                    {' · '}<Link to="/terms" target="_blank">{lang === 'th' ? 'ข้อกำหนด' : 'Terms'}</Link>
+                  </span>
+                </label>
               </>
             )}
 
@@ -640,7 +653,7 @@ export function CreateWizardPage() {
           </div>
           <div className="wiz-actions">
             <button className="btn btn-ghost" onClick={() => setStep(2)}>{t('back')}</button>
-            <button className="btn btn-primary" disabled={busy} onClick={submitChild}>{t('continue')}</button>
+            <button className="btn btn-primary" disabled={busy || (!selectedChild && !guardianConsent)} onClick={submitChild}>{t('continue')}</button>
           </div>
         </>
       )}

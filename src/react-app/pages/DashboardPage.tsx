@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Coins, Library, PenLine } from 'lucide-react';
+import { BookOpen, Coins, Library, PenLine, ShieldCheck, ChevronRight } from 'lucide-react';
 import { api, Book } from '../api';
 import { useLang } from '../i18n';
 import { getStory } from '../../shared/stories';
@@ -29,6 +29,15 @@ export function DashboardPage() {
           <Link to="/create" className="btn btn-primary">{t('createNew')}</Link>
         </div>
       </div>
+
+      <Link to="/privacy-data" className="privacy-summary-card">
+        <span className="privacy-summary-icon"><ShieldCheck size={22} /></span>
+        <span>
+          <strong>{lang === 'th' ? 'ความเป็นส่วนตัวและข้อมูล' : 'Privacy & data'}</strong>
+          <small>{lang === 'th' ? 'หนังสือเป็นส่วนตัวโดยค่าเริ่มต้น จัดการข้อมูลเด็กและลิงก์ครอบครัว' : 'Books are private by default. Manage child data and family links.'}</small>
+        </span>
+        <ChevronRight size={20} />
+      </Link>
 
       {error && <div className="error-message">{error}</div>}
       {!books && !error && <div className="empty-state"><div className="spinner" style={{ margin: '0 auto' }} /></div>}

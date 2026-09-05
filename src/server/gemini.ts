@@ -1,6 +1,7 @@
 import { encodeBase64, loadMediaReference, publicMediaUrl, putMedia } from './media';
 import type { Bindings } from './types';
 import { generateHiggsfieldImage } from './higgsfield';
+import { reserveGeminiImage } from './usage';
 
 const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta/models';
 
@@ -94,6 +95,7 @@ export async function generateImage(
     return generateHiggsfieldImage(env, requestUrl, prompt, references, fileName);
   }
   try {
+    await reserveGeminiImage(env);
     const parts: any[] = [{ text: prompt }];
     for (const reference of references) {
       const media = await loadMediaReference(env, reference);

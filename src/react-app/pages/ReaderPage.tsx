@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import HTMLFlipBook from 'react-pageflip';
-import { Share2, Download, Palette, Volume2, Star, Heart, ChevronLeft, ChevronRight, Check, BookOpen } from 'lucide-react';
+import { Share2, Download, Palette, Volume2, Star, Heart, ChevronLeft, ChevronRight, Check, BookOpen, LockKeyhole, Unlink } from 'lucide-react';
 import { api, BookFull, Page } from '../api';
 import { useLang } from '../i18n';
 import { getStory } from '../../shared/stories';
@@ -36,6 +36,7 @@ export function ReaderPage({ shared = false }: { shared?: boolean }) {
   const [audioBusy, setAudioBusy] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [coloringPdfBusy, setColoringPdfBusy] = useState(false);
+  const [shareBusy, setShareBusy] = useState(false);
   const flipRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   // Deduplicates concurrent audio generation: the background prefetcher and a user
@@ -552,6 +553,28 @@ export function ReaderPage({ shared = false }: { shared?: boolean }) {
       setTimeout(() => setCopied(false), 2500);
     } catch { window.prompt('Copy link:', shareUrl); }
   };
+  const enableAndCopyShare = async () => {
+    if (!book || !id) return;
+    setShareBusy(true); setError('');
+    try {
+      if (!book.share_enabled) {
+        await api.setBookShare(id, true);
+        setBook({ ...book, share_enabled: 1 });
+      }
+      await copyShare();
+    } catch (e: any) { setError(e.message); }
+    finally { setShareBusy(false); }
+  };
+  const stopSharing = async () => {
+    if (!book || !id) return;
+    setShareBusy(true); setError('');
+    try {
+      await api.setBookShare(id, false);
+      setBook({ ...book, share_enabled: 0 });
+      setCopied(false);
+    } catch (e: any) { setError(e.message); }
+    finally { setShareBusy(false); }
+  };
   const submitOrder = async () => {
     if (!contact.trim() || !id) return;
     setOrderState('sending');
@@ -567,9 +590,6 @@ export function ReaderPage({ shared = false }: { shared?: boolean }) {
           <h1 className="reader-title">{lang === 'th' ? book.title_th : book.title_en}</h1>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button className="btn btn-secondary btn-sm" onClick={copyShare}>
-            {copied ? <Check size={16} /> : <Share2 size={16} />} {copied ? t('shareCopied') : t('share')}
-          </button>
           <button className="btn btn-secondary btn-sm" disabled={pdfBusy || coloringPdfBusy} onClick={downloadPdf}>
             <Download size={16} /> {pdfBusy ? t('makingPdf') : t('downloadPdf')}
           </button>
@@ -580,6 +600,20 @@ export function ReaderPage({ shared = false }: { shared?: boolean }) {
       </div>
 
       {error && <div className="error-message">{error}</div>}
+
+      {!shared && (
+        <div className={`family-share-card ${book.share_enabled ? 'active' : ''}`}>
+          <span className="family-share-icon">{book.share_enabled ? <Share2 size={21} /> : <LockKeyhole size={21} />}</span>
+          <div>
+            <strong>{book.share_enabled ? (lang === 'th' ? 'เปิดลิงก์ครอบครัวแล้ว' : 'Family link is active') : (lang === 'th' ? 'หนังสือเล่มนี้เป็นส่วนตัว' : 'This book is private')}</strong>
+            <p>{book.share_enabled ? (lang === 'th' ? 'ทุกคนที่มีลิงก์อ่านได้ คุณหยุดแชร์ได้ทุกเมื่อ' : 'Anyone with the link can read it. You can stop sharing at any time.') : (lang === 'th' ? 'เปิดลิงก์เฉพาะเมื่อคุณต้องการแชร์กับคนที่ไว้ใจ' : 'Only create a link when you want to share with people you trust.')}</p>
+          </div>
+          <div className="family-share-actions">
+            <button className="btn btn-secondary btn-sm" disabled={shareBusy} onClick={enableAndCopyShare}>{copied ? <Check size={16} /> : <Share2 size={16} />} {copied ? t('shareCopied') : book.share_enabled ? (lang === 'th' ? 'คัดลอกลิงก์' : 'Copy link') : (lang === 'th' ? 'สร้างลิงก์ครอบครัว' : 'Create family link')}</button>
+            {!!book.share_enabled && <button className="danger-link" disabled={shareBusy} onClick={stopSharing}><Unlink size={15} /> {lang === 'th' ? 'หยุดแชร์' : 'Stop sharing'}</button>}
+          </div>
+        </div>
+      )}
 
       <div className="flipbook-stage">
         <div className="book-frame">

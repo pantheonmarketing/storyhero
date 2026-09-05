@@ -46,7 +46,7 @@ export async function putBase64Media(
   await putMedia(env, key, decodeBase64(base64), contentType);
 }
 
-function internalKeyFromReference(reference: string): string | null {
+export function mediaKeyFromReference(reference: string): string | null {
   if (reference.startsWith('r2://')) return reference.slice(5);
   try {
     const url = new URL(reference);
@@ -75,7 +75,7 @@ export function detectMediaContentType(bytes: Uint8Array, declared?: string | nu
 }
 
 export async function loadMediaReference(env: Bindings, reference: string): Promise<MediaPayload> {
-  const key = internalKeyFromReference(reference);
+  const key = mediaKeyFromReference(reference);
   if (key) {
     const object = await env.MEDIA.get(key);
     if (!object) throw new Error(`Stored media not found: ${key}`);
@@ -104,11 +104,19 @@ export async function loadMediaReference(env: Bindings, reference: string): Prom
   };
 }
 
+/** Delete StoryHero-owned R2 objects referenced by DB rows. Legacy external
+ * assets are ignored because StoryHero does not own them. */
+export async function deleteMediaReferences(env: Bindings, references: Array<string | null | undefined>): Promise<number> {
+  const keys = [...new Set(references.map((value) => value ? mediaKeyFromReference(value) : null).filter(Boolean) as string[])];
+  if (!keys.length) return 0;
+  await env.MEDIA.delete(keys);
+  return keys.length;
+}
+
 export function mediaObjectResponse(object: R2ObjectBody): Response {
   const headers = new Headers();
   object.writeHttpMetadata(headers);
   headers.set('etag', object.httpEtag);
   headers.set('Cache-Control', object.httpMetadata?.cacheControl || 'public, max-age=31536000, immutable');
-  headers.set('Access-Control-Allow-Origin', '*');
   return new Response(object.body, { headers });
 }

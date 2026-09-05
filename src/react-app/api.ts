@@ -3,6 +3,7 @@
 export interface Child {
   id: string; name: string; age: number; gender: 'boy' | 'girl';
   photo_url: string; hero_url: string | null; hero_style?: string | null;
+  guardian_consent_at?: string | null;
 }
 export interface Book {
   id: string; child_id: string; story_id: string; title_th: string; title_en: string;
@@ -10,6 +11,7 @@ export interface Book {
   cover_url: string | null; error: string | null; child_name?: string;
   mode?: 'classic' | 'custom' | 'phonics'; phonics_group?: number | null; custom_brief?: string | null;
   reading_age?: number | null;
+  public_gallery?: number; share_enabled?: number;
 }
 export interface Page {
   idx: number; text_th: string; text_en: string; image_url: string | null; status?: string;
@@ -37,8 +39,10 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   children: () => req<Child[]>('/api/children'),
-  createChild: (data: { name: string; age: number; gender: string; photo_b64: string }) =>
+  createChild: (data: { name: string; age: number; gender: string; photo_b64: string; guardian_consent: boolean }) =>
     req<Child>('/api/children', { method: 'POST', body: JSON.stringify(data) }),
+  deleteChild: (childId: string, confirmation: string) =>
+    req<{ success: boolean }>(`/api/children/${childId}`, { method: 'DELETE', body: JSON.stringify({ confirmation }) }),
   generateHero: (childId: string, style?: string) =>
     req<Child>(`/api/children/${childId}/hero`, { method: 'POST', body: JSON.stringify({ style }) }),
   books: () => req<Book[]>('/api/books'),
@@ -63,10 +67,14 @@ export const api = {
       `/api/books/${bookId}/pages/next`, { method: 'POST', body: JSON.stringify({}) }),
   book: (id: string) => req<BookFull>(`/api/books/${id}`),
   sharedBook: (id: string) => req<BookFull>(`/api/share/${id}`),
+  setBookShare: (id: string, enabled: boolean) =>
+    req<{ success: boolean; share_enabled: number }>(`/api/books/${id}/share`, { method: 'POST', body: JSON.stringify({ enabled }) }),
   gallery: (limit = 8) => req<GalleryItem[]>(`/api/gallery?limit=${limit}`),
   printOrder: (bookId: string, contact: string) =>
     req<{ success: boolean }>(`/api/books/${bookId}/print-order`, { method: 'POST', body: JSON.stringify({ contact }) }),
   credits: () => req<{ credits: number; unlimited: boolean }>('/api/credits'),
+  deleteAccount: (confirmation: string) =>
+    req<{ success: boolean }>('/api/users/me', { method: 'DELETE', body: JSON.stringify({ confirmation }) }),
   adminUsers: () => req<AdminUser[]>('/api/admin/users'),
   adminGrant: (email: string, delta: number, reason?: string) =>
     req<{ success: boolean; email: string; credits: number }>('/api/admin/credits', { method: 'POST', body: JSON.stringify({ email, delta, reason }) }),

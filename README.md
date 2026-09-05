@@ -13,7 +13,7 @@ StoryHero creates personalized bilingual Thai/English children's books from a ch
 - Resend for email OTP and book-ready messages
 - Optional Google Identity Services login
 
-Child photos are private R2 objects and are only served through authenticated API routes. Generated book media is copied into this project's own R2 bucket.
+Child photos are private R2 objects and are only served through authenticated API routes. Generated book media is copied into this project's own R2 bucket and is served only to the signed-in parent or through an explicitly enabled family link.
 
 ## Local development
 
@@ -27,13 +27,15 @@ The web app proxies `/api` and `/media` to the local Worker on port 8787.
 
 ## Provider configuration
 
-`IMAGE_PROVIDER=gemini` uses `GEMINI_API_KEY` for writing, illustration, and TTS. Gemini image generation must have non-zero quota in the selected Google project.
+`IMAGE_PROVIDER=gemini` uses `GEMINI_API_KEY` for writing, illustration, and TTS. Gemini image generation must have non-zero quota in the selected Google project. `GEMINI_DAILY_IMAGE_LIMIT` is the app-wide illustration safety ceiling.
 
 `IMAGE_PROVIDER=higgsfield` keeps Gemini for writing/TTS and uses Higgsfield MCP for illustrations. The owner connects once from `/admin`; OAuth tokens are encrypted at rest and the app uses the owner's existing Higgsfield plan credits. `HIGGSFIELD_DAILY_CREDIT_LIMIT` is a hard server-side daily ceiling (100 by default).
 
 Resend requires `RESEND_API_KEY` and a verified sender in `EMAIL_FROM`. The current production sender is `StoryHero <hello@theaiceos.com>`.
 
 Google sign-in is optional. Without `GOOGLE_CLIENT_ID`, the Google button is hidden and email OTP remains fully functional.
+
+`OTP_IP_HOURLY_LIMIT` caps login-code emails from one connection. New parent accounts also have small beta caps for child profiles and hero redraws.
 
 ## Verification
 
@@ -76,5 +78,7 @@ The old SkillBoss deployment should remain untouched until the direct deployment
 
 - `.dev.vars`, migration archives, build output, and Wrangler state are ignored by source control.
 - Do not commit API keys or child photos.
+- New books are private by default. A parent can enable and revoke a family link from the reader; only owner-curated books can appear in the landing gallery.
+- New child profiles require an explicit parent/legal-guardian consent record. Parents can permanently delete a child profile or their account from `/privacy-data`; owned R2 media is removed with the database records.
 - Seven completed legacy books are archived locally for migration. The original private source photos are unavailable through the old public API, so owners should upload fresh photos for future generation.
 - The direct app returns structured JSON errors for API failures, including provider quota and billing issues.

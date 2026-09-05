@@ -9,6 +9,8 @@ import { DashboardPage } from './pages/DashboardPage';
 import { CreateWizardPage } from './pages/CreateWizardPage';
 import { ReaderPage } from './pages/ReaderPage';
 import { AdminPage } from './pages/AdminPage';
+import { PrivacyDataPage } from './pages/PrivacyDataPage';
+import { LegalPage } from './pages/LegalPage';
 
 export function App() {
   return (
@@ -20,7 +22,11 @@ export function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/share/:id" element={<ReaderPage shared />} />
+            <Route path="/privacy" element={<LegalPage page="privacy" />} />
+            <Route path="/terms" element={<LegalPage page="terms" />} />
+            <Route path="/contact" element={<LegalPage page="contact" />} />
             <Route path="/app" element={<AuthProtect><DashboardPage /></AuthProtect>} />
+            <Route path="/privacy-data" element={<AuthProtect><PrivacyDataPage /></AuthProtect>} />
             <Route path="/create" element={<AuthProtect><CreateWizardPage /></AuthProtect>} />
             <Route path="/book/:id" element={<AuthProtect><ReaderPage /></AuthProtect>} />
             {/* Hidden owner-only credits dashboard — backend 404s for everyone else */}

@@ -6,6 +6,7 @@ export type Bindings = {
   GEMINI_TEXT_MODEL?: string;
   GEMINI_TEXT_FALLBACK_MODEL?: string;
   GEMINI_IMAGE_MODEL?: string;
+  GEMINI_DAILY_IMAGE_LIMIT?: string;
   GEMINI_TTS_MODEL?: string;
   GEMINI_TTS_FALLBACK_MODEL?: string;
   IMAGE_PROVIDER?: 'gemini' | 'higgsfield';
@@ -16,6 +17,7 @@ export type Bindings = {
   HIGGSFIELD_IMAGE_MODEL?: string;
   HIGGSFIELD_CREDITS_PER_IMAGE?: string;
   HIGGSFIELD_DAILY_CREDIT_LIMIT?: string;
+  OTP_IP_HOURLY_LIMIT?: string;
   RESEND_API_KEY?: string;
   EMAIL_FROM?: string;
   GOOGLE_CLIENT_ID?: string;

@@ -688,7 +688,7 @@ function Features({ th }: { th: boolean }) {
 /* ============================ VALUE STACK ============================ */
 function ValueStack({ th }: { th: boolean }) {
   const items = [
-    { icon: <Crown className="w-5 h-5" />, name: th ? 'ตัวละครฮีโร่จากรูปลูก (วาดใหม่ได้ไม่จำกัด)' : 'Hero character from your child\'s photo (unlimited redraws)', value: '฿590' },
+    { icon: <Crown className="w-5 h-5" />, name: th ? 'ตัวละครฮีโร่จากรูปลูก (สร้างได้สูงสุด 3 แบบ)' : 'Hero character from your child\'s photo (up to 3 versions)', value: '฿590' },
     { icon: <Palette className="w-5 h-5" />, name: th ? 'ภาพประกอบสีน้ำ 11 หน้า หน้าเดิมทุกภาพ' : '11 consistent watercolor illustrations', value: '฿890' },
     { icon: <BookOpen className="w-5 h-5" />, name: th ? 'นิทานสองภาษา ปรับตามวัยลูก' : 'Bilingual story adapted to your child\'s age', value: '฿390' },
     { icon: <Mic className="w-5 h-5" />, name: th ? 'เสียงอ่านนิทานไทย + อังกฤษ' : 'Thai + English narration audio', value: '฿290', bonus: true },
@@ -836,22 +836,22 @@ function Testimonials({ th }: { th: boolean }) {
 /* ============================ FAQ ============================ */
 function FAQ({ th }: { th: boolean }) {
   const faqs: [string, string][] = th ? [
-    ['รูปลูกของฉันปลอดภัยไหม?', 'ปลอดภัยค่ะ รูปถ่ายถูกเก็บอย่างปลอดภัย ใช้เพื่อสร้างตัวละครของลูกคุณเท่านั้น ไม่แชร์ให้ใคร และขอลบได้ทุกเมื่อ'],
+    ['รูปลูกของฉันปลอดภัยไหม?', 'รูปต้นฉบับเป็นส่วนตัวและใช้สร้างตัวละครเท่านั้น หนังสือใหม่เป็นส่วนตัวโดยค่าเริ่มต้น และคุณลบข้อมูลเด็กได้เองทุกเมื่อ'],
     ['ใช้เวลานานแค่ไหน?', 'ประมาณ 10 นาทีต่อเล่ม อัปโหลดรูป เลือกนิทาน แล้ว AI เขียนเรื่องและวาดภาพ 11 หน้าให้อัตโนมัติ'],
-    ['หน้าลูกจะเหมือนจริงไหม?', 'AI สร้างตัวละครนิทานจากรูปจริงของลูก คุณเห็นตัวอย่างก่อน ถ้ายังไม่เหมือนใจกดวาดใหม่ได้ไม่จำกัด'],
-    ['เล่มแรกฟรีจริงไหม? ต้องใส่บัตรไหม?', 'ฟรีจริง 100% ไม่ต้องใส่บัตรเครดิต แค่ล็อกอินด้วย Google หรืออีเมลก็เริ่มได้เลย'],
+    ['หน้าลูกจะเหมือนจริงไหม?', 'AI สร้างตัวละครนิทานจากรูปจริงของลูก คุณเห็นตัวอย่างก่อนและสร้างตัวเลือกได้สูงสุด 3 แบบ'],
+    ['เล่มแรกฟรีจริงไหม? ต้องใส่บัตรไหม?', 'ฟรีจริง 100% ไม่ต้องใส่บัตรเครดิต ล็อกอินด้วยอีเมลแล้วเริ่มได้เลย'],
     ['มีภาษาอะไรบ้าง?', 'ทุกหน้ามีภาษาไทยและอังกฤษคู่กัน พร้อมเสียงอ่านทั้งสองภาษา'],
     ['สั่งพิมพ์เป็นเล่มจริงได้ไหม?', 'ได้ค่ะ กดสนใจสั่งพิมพ์ในหน้านิทาน ทีมงานจะติดต่อกลับเรื่องหนังสือปกแข็งส่งถึงบ้าน'],
   ] : [
-    ['Is my child\'s photo safe?', 'Yes. Photos are stored securely, used only to create your child\'s character, never shared, and deletable on request.'],
+    ['Is my child\'s photo safe?', 'The original photo is private and used only for character creation. New books are private by default, and you can delete child data yourself at any time.'],
     ['How long does it take?', 'About 10 minutes per book. Upload a photo, pick a tale, and AI writes and illustrates all 11 pages automatically.'],
-    ['Will it really look like my child?', 'AI creates a storybook character from the real photo. You preview first and can redraw unlimited times.'],
-    ['Is the first book really free? Card needed?', '100% free, no credit card. Just sign in with Google or email and start.'],
+    ['Will it really look like my child?', 'AI creates a storybook character from the real photo. You preview first and can create up to 3 versions.'],
+    ['Is the first book really free? Card needed?', '100% free, no credit card. Just sign in by email and start.'],
     ['Which languages?', 'Every page pairs Thai and English, with narration audio in both languages.'],
     ['Can I order a printed copy?', 'Yes - tap the print-interest button on your finished book and our team will contact you about a hardcover.'],
   ];
   return (
-    <section className="py-20 bg-white">
+    <section id="faq" className="py-20 bg-white">
       <div className="container mx-auto px-4 max-w-3xl">
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 font-playfair">{th ? 'คำถามที่พบบ่อย' : 'Frequently Asked Questions'}</h2>
@@ -1024,7 +1024,7 @@ function Footer({ th }: { th: boolean }) {
         {[
           { h: th ? 'ผลิตภัณฑ์' : 'Product', links: [[th ? 'นิทานทั้งหมด' : 'Stories', '/#order'], [th ? 'ตัวอย่างเล่มจริง' : 'Example Book', DEMO.share], [th ? 'ราคา' : 'Pricing', '/#order']] },
           { h: th ? 'บัญชี' : 'Account', links: [[th ? 'เข้าสู่ระบบ' : 'Log In', '/login'], [th ? 'ชั้นหนังสือ' : 'My Library', '/app'], [th ? 'สร้างนิทาน' : 'Create', '/create']] },
-          { h: th ? 'ช่วยเหลือ' : 'Support', links: [[th ? 'คำถามที่พบบ่อย' : 'FAQ', '/'], [th ? 'ความเป็นส่วนตัว' : 'Privacy', '/'], [th ? 'ติดต่อเรา' : 'Contact', '/']] },
+          { h: th ? 'ช่วยเหลือ' : 'Support', links: [[th ? 'คำถามที่พบบ่อย' : 'FAQ', '/#faq'], [th ? 'ความเป็นส่วนตัว' : 'Privacy', '/privacy'], [th ? 'ข้อกำหนด' : 'Terms', '/terms'], [th ? 'ติดต่อเรา' : 'Contact', '/contact']] },
         ].map((col, i) => (
           <div key={i}>
             <h4 className="font-bold mb-3 text-gray-200">{col.h}</h4>
