@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Coins, Library, PenLine, ShieldCheck, ChevronRight, Clock3 } from 'lucide-react';
+import { BookOpen, Library, PenLine, ShieldCheck, ChevronRight, Clock3 } from 'lucide-react';
 import { api, Book } from '../api';
 import { useLang } from '../i18n';
 import { useAuth } from '../auth';
@@ -31,11 +31,6 @@ export function DashboardPage() {
       <div className="dash-head">
         <h1><BookOpen className="title-icon" size={28} /> {t('myLibrary')}</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          {approved && credits && !credits.unlimited && (
-            <span className="credits-pill">
-              <Coins size={15} /> {booksRemaining} {t('creditsLeft')}
-            </span>
-          )}
           {canCreate && <Link to="/create" className="btn btn-primary">{t('createNew')}</Link>}
         </div>
       </div>

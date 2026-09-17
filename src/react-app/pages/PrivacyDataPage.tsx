@@ -15,7 +15,7 @@ export function PrivacyDataPage() {
   const [confirmation, setConfirmation] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const isOwner = user?.email.toLowerCase() === 'yoniwe@gmail.com';
+  const isOwner = !!user?.unlimited;
 
   useEffect(() => { api.children().then(setChildren).catch((e) => setError(e.message)); }, []);
 

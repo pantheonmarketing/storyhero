@@ -298,7 +298,12 @@ async function getAccountAccess(db: D1Database, email: string) {
     db.prepare('SELECT credits, approved, approved_at FROM user_credits WHERE email = ?1').bind(e).first<any>(),
     getBookCount(db, e),
   ]);
-  const booksRemaining = owner ? null : Math.max(0, PARENT_BOOK_LIMIT - booksUsed);
+  const unusedCapacity = Math.max(0, PARENT_BOOK_LIMIT - booksUsed);
+  // Credits are the lifetime allowance. Clamping them to the current-book
+  // capacity prevents deletion from ever increasing a parent's quota.
+  const booksRemaining = owner
+    ? null
+    : Math.min(Math.max(0, Number(row?.credits || 0)), unusedCapacity);
   return {
     approved: owner || !!row?.approved,
     approvedAt: row?.approved_at || null,
@@ -306,7 +311,7 @@ async function getAccountAccess(db: D1Database, email: string) {
     bookLimit: owner ? null : PARENT_BOOK_LIMIT,
     booksUsed,
     booksRemaining,
-    credits: owner ? 9999 : Math.min(Math.max(0, Number(row?.credits || 0)), booksRemaining || 0),
+    credits: owner ? 9999 : booksRemaining,
   };
 }
 

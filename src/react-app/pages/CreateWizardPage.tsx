@@ -269,6 +269,7 @@ export function CreateWizardPage() {
           : {}),
       });
       setBook(b);
+      window.dispatchEvent(new Event('storyhero:quota-changed'));
       setWriting(false);
       void illustrate(b);
     } catch (e: any) {

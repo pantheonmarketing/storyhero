@@ -203,6 +203,7 @@ const dict = {
   pagesLong: { th: 'ยาว', en: 'Long' },
   customIdeaRequired: { th: 'กรุณาเล่าไอเดียนิทานของคุณ', en: 'Please tell us your story idea' },
   creditsLeft: { th: 'เล่มที่สร้างได้อีก', en: 'books remaining' },
+  unlimitedBooks: { th: 'สร้างหนังสือได้ไม่จำกัด', en: 'Unlimited books' },
   approvalPendingTitle: { th: 'กำลังรออนุมัติบัญชี', en: 'Your account is awaiting approval' },
   approvalPendingBody: { th: 'ทีมงานกำลังตรวจสอบบัญชีผู้ปกครองของคุณ เมื่ออนุมัติแล้ว คุณจะสร้างนิทานได้สูงสุด 6 เล่ม', en: 'Our team is reviewing your parent account. Once approved, you can create up to 6 books.' },
   approvalPendingPill: { th: 'รอตรวจสอบ', en: 'Pending review' },
