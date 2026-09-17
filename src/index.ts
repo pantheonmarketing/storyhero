@@ -11,11 +11,7 @@ import { buildPhonicsPlan, getPhonicsGroup, validatePhonicsEnglish, type Support
 import { generateImage, generateJson, generateSpeech } from './server/gemini';
 import { sendEmail } from './server/email';
 import { verifyGoogleCredential } from './server/googleAuth';
-import {
-  beginHiggsfieldOAuth,
-  finishHiggsfieldOAuth,
-  higgsfieldConnectionStatus,
-} from './server/higgsfieldMcpAuth';
+import { kieConnectionStatus, verifyKieMediaRequest } from './server/kie';
 import { decodeBase64, deleteMediaReferences, loadMediaReference, mediaObjectResponse, putMedia } from './server/media';
 import { reserveWindowedRequest } from './server/usage';
 import type { AuthedUser, Bindings } from './server/types';
@@ -55,7 +51,7 @@ app.onError((error, c) => {
   console.error(error);
   if (c.req.path.startsWith('/api/')) {
     const message = String(error?.message || error).slice(0, 240);
-    if (/not_enough_credits|insufficient credits/i.test(message)) {
+    if (/not_enough_credits|insufficient (?:credits|balance)|not enough credits|out of credits/i.test(message)) {
       return c.json({ error: 'The selected image provider needs API credits before it can generate illustrations.' }, 402);
     }
     if (/is not configured/i.test(message)) {
@@ -209,6 +205,16 @@ async function ensureSchema(db: D1Database) {
       credits_reserved INTEGER NOT NULL DEFAULT 0,
       jobs INTEGER NOT NULL DEFAULT 0,
       PRIMARY KEY (provider, day)
+    )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS image_jobs (
+      job_key TEXT PRIMARY KEY,
+      provider TEXT NOT NULL,
+      task_id TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'submitted',
+      result_url TEXT,
+      error TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
     )`),
     db.prepare(`CREATE TABLE IF NOT EXISTS request_limits (
       scope TEXT NOT NULL,
@@ -741,6 +747,20 @@ app.post('/api/verify-otp', async (c) => {
 
 app.get('/api/health', (c) => c.json({ status: 'ok', time: new Date().toISOString() }));
 
+// Short-lived, signed media access for the image provider. Child photos stay
+// private in R2 and are exposed only through an unguessable URL that expires in
+// ten minutes; the permanent /media route still requires the parent's session.
+app.get('/api/provider-media', async (c) => {
+  const key = await verifyKieMediaRequest(c.env, c.req.url);
+  if (!key) return c.text('Not found', 404);
+  const object = await c.env.MEDIA.get(key);
+  if (!object) return c.text('Not found', 404);
+  const response = mediaObjectResponse(object);
+  response.headers.set('Cache-Control', 'private, no-store');
+  response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+  return response;
+});
+
 // Public generated media. Original child photos live under private/ and are never exposed here.
 app.get('/media/*', async (c) => {
   const key = decodeURIComponent(c.req.path.slice('/media/'.length));
@@ -1226,7 +1246,7 @@ app.post('/api/books/:id/pages/next', appAuth, approvedOnly, async (c) => {
     // Record the error but keep the page pending so the client can retry
     const rawError = String(e?.message || e).slice(0, 300);
     await c.env.DB.prepare('UPDATE books SET error = ?1 WHERE id = ?2').bind(rawError, book.id).run();
-    if (/not_enough_credits|insufficient credits/i.test(rawError)) {
+    if (/not_enough_credits|insufficient (?:credits|balance)|not enough credits|out of credits/i.test(rawError)) {
       return c.json({
         done: false,
         retry: true,
@@ -1359,32 +1379,11 @@ const adminOnly = async (c: any, next: () => Promise<void>) => {
   return next();
 };
 
-// Higgsfield MCP uses the owner's existing plan credits through OAuth. Tokens
-// are encrypted at rest and never returned to the browser.
-app.get('/api/admin/higgsfield/status', appAuth, adminOnly, async (c) => {
+// Kie is configured with a Worker secret. The admin receives only connection,
+// balance, model and daily-safety-limit information—never the API key.
+app.get('/api/admin/kie/status', appAuth, adminOnly, async (c) => {
   await ensureSchema(c.env.DB);
-  return c.json(await higgsfieldConnectionStatus(c.env));
-});
-
-app.post('/api/admin/higgsfield/connect', appAuth, adminOnly, async (c) => {
-  await ensureSchema(c.env.DB);
-  return c.json({ authorizeUrl: await beginHiggsfieldOAuth(c.env, c.req.url) });
-});
-
-app.get('/api/admin/higgsfield/callback', appAuth, adminOnly, async (c) => {
-  await ensureSchema(c.env.DB);
-  const code = c.req.query('code');
-  const state = c.req.query('state');
-  const error = c.req.query('error');
-  if (error) return c.redirect(`/admin?higgsfield=error&detail=${encodeURIComponent(error)}`);
-  if (!code || !state) return c.redirect('/admin?higgsfield=error');
-  try {
-    await finishHiggsfieldOAuth(c.env, c.req.url, code, state);
-    return c.redirect('/admin?higgsfield=connected');
-  } catch (oauthError: any) {
-    console.error(oauthError);
-    return c.redirect(`/admin?higgsfield=error&detail=${encodeURIComponent(String(oauthError?.message || oauthError).slice(0, 120))}`);
-  }
+  return c.json(await kieConnectionStatus(c.env));
 });
 
 // All parent accounts, with pending approvals first.

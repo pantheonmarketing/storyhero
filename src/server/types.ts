@@ -9,8 +9,14 @@ export type Bindings = {
   GEMINI_DAILY_IMAGE_LIMIT?: string;
   GEMINI_TTS_MODEL?: string;
   GEMINI_TTS_FALLBACK_MODEL?: string;
-  IMAGE_PROVIDER?: 'gemini' | 'higgsfield';
-  IMAGE_FALLBACK_PROVIDER?: 'higgsfield' | 'none';
+  IMAGE_PROVIDER?: 'gemini' | 'higgsfield' | 'kie';
+  IMAGE_FALLBACK_PROVIDER?: 'higgsfield' | 'kie' | 'none';
+  KIE_API_KEY?: string;
+  KIE_REFERENCE_SIGNING_KEY?: string;
+  KIE_IMAGE_MODEL?: string;
+  KIE_IMAGE_RESOLUTION?: string;
+  KIE_CREDITS_PER_IMAGE?: string;
+  KIE_DAILY_CREDIT_LIMIT?: string;
   HIGGSFIELD_MCP_URL?: string;
   HIGGSFIELD_MCP_ACCESS_TOKEN?: string;
   HIGGSFIELD_TOKEN_ENCRYPTION_KEY?: string;

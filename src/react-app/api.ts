@@ -89,9 +89,7 @@ export const api = {
     req<{ success: boolean; email: string; approved: boolean; booksRemaining: number | null }>('/api/admin/approve', { method: 'POST', body: JSON.stringify({ email, approved }) }),
   adminDeleteUser: (email: string) =>
     req<{ success: boolean; email: string }>('/api/admin/delete-user', { method: 'POST', body: JSON.stringify({ email }) }),
-  adminHiggsfieldStatus: () => req<HiggsfieldStatus>('/api/admin/higgsfield/status'),
-  adminConnectHiggsfield: () =>
-    req<{ authorizeUrl: string }>('/api/admin/higgsfield/connect', { method: 'POST', body: JSON.stringify({}) }),
+  adminKieStatus: () => req<KieStatus>('/api/admin/kie/status'),
 };
 
 export interface AdminUser {
@@ -102,13 +100,15 @@ export interface AdminUser {
 export interface LedgerEntry {
   id: string; email: string; delta: number; reason: string | null; admin_email: string | null; created_at: string;
 }
-export interface HiggsfieldStatus {
-  connected: boolean;
-  accountEmail: string | null;
-  expiresAt: number | null;
+export interface KieStatus {
+  configured: boolean;
+  balance: number | null;
+  error: string | null;
+  model: string;
+  resolution: string;
   todayCreditsReserved: number;
   todayJobs: number;
-  dailyLimit: number;
+  dailyCreditLimit: number;
 }
 
 /** Downscale + JPEG-compress an image file client-side, return base64 (no data: prefix). */

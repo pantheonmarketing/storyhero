@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RefreshCw, ScrollText, Users, Ban, ShieldCheck, Trash2, Search, Link2, Clock3, UserX, BookOpen } from 'lucide-react';
-import { api, AdminUser, LedgerEntry, HiggsfieldStatus } from '../api';
+import { RefreshCw, ScrollText, Users, Ban, ShieldCheck, Trash2, Search, Zap, Clock3, UserX, BookOpen } from 'lucide-react';
+import { api, AdminUser, LedgerEntry, KieStatus } from '../api';
 
 /**
  * Hidden owner-only admin dashboard (/admin — not linked anywhere in the UI).
@@ -16,13 +16,13 @@ export function AdminPage() {
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState('');
   const [query, setQuery] = useState('');
-  const [higgsfield, setHiggsfield] = useState<HiggsfieldStatus | null>(null);
+  const [kie, setKie] = useState<KieStatus | null>(null);
 
   const load = () => {
     api.adminUsers()
       .then(setUsers)
       .catch(() => navigate('/', { replace: true })); // 404 for non-owners
-    api.adminHiggsfieldStatus().then(setHiggsfield).catch(() => {});
+    api.adminKieStatus().then(setKie).catch(() => {});
   };
   useEffect(load, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -69,17 +69,6 @@ export function AdminPage() {
     setShowLedger(!showLedger);
   };
 
-  const connectHiggsfield = async () => {
-    setBusy('higgsfield'); setMsg('');
-    try {
-      const { authorizeUrl } = await api.adminConnectHiggsfield();
-      window.location.assign(authorizeUrl);
-    } catch (e: any) {
-      setMsg(`Error: ${e.message}`);
-      setBusy('');
-    }
-  };
-
   const filtered = useMemo(() => {
     if (!users) return [];
     const q = query.trim().toLowerCase();
@@ -120,21 +109,25 @@ export function AdminPage() {
         {bannedCount > 0 && chip(<Ban size={16} />, `${bannedCount} banned`)}
       </div>
 
-      {/* Owner-paid Higgsfield MCP connection and hard daily spend ceiling */}
+      {/* Kie API balance and hard daily spend ceiling */}
       <div style={{ background: '#fff', border: '1.5px solid #ddd6fe', borderRadius: 14, padding: 16, marginBottom: 16, display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <div style={{ fontWeight: 800, color: '#4c1d95', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Link2 size={17} /> Higgsfield MCP
+            <Zap size={17} /> Kie · Nano Banana 2
           </div>
           <div style={{ fontSize: '.84rem', color: '#6b7280', marginTop: 4 }}>
-            {higgsfield?.connected
-              ? `Connected${higgsfield.accountEmail ? ` as ${higgsfield.accountEmail}` : ''} · ${higgsfield.todayCreditsReserved}/${higgsfield.dailyLimit} credits reserved today across ${higgsfield.todayJobs} jobs`
-              : 'Not connected · illustrations are disabled until the owner authorizes Higgsfield'}
+            {kie?.configured
+              ? kie.error
+                ? `Configured, but balance check failed · ${kie.error}`
+                : `${kie.balance ?? 0} credits available · ${kie.resolution} · ${kie.todayCreditsReserved}/${kie.dailyCreditLimit} credits reserved today across ${kie.todayJobs} jobs`
+              : 'Not configured · illustrations are currently disabled'}
           </div>
         </div>
-        <button className="btn btn-secondary btn-sm" disabled={busy === 'higgsfield'} onClick={connectHiggsfield}>
-          <Link2 size={15} /> {higgsfield?.connected ? 'Reconnect' : 'Connect Higgsfield'}
-        </button>
+        {kie?.configured && kie.balance !== null && kie.balance < 96 && (
+          <span style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', borderRadius: 999, padding: '6px 11px', fontSize: '.75rem', fontWeight: 800 }}>
+            Low balance · top up before a full book
+          </span>
+        )}
       </div>
 
       {msg && <div style={{ marginBottom: 16, fontSize: '.88rem', color: msg.startsWith('Error') ? '#dc2626' : '#166534', fontWeight: 700 }}>{msg}</div>}

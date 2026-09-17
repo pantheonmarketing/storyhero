@@ -41,3 +41,21 @@ export async function reserveGeminiImage(env: Bindings): Promise<void> {
     throw new Error(`Gemini daily image safety limit reached (${limit} images)`);
   }
 }
+
+export async function reserveKieCredits(env: Bindings): Promise<void> {
+  const provider = 'kie-image';
+  const day = new Date().toISOString().slice(0, 10);
+  const creditsPerImage = Math.max(1, Number(env.KIE_CREDITS_PER_IMAGE || 8));
+  const dailyCreditLimit = Math.max(creditsPerImage, Number(env.KIE_DAILY_CREDIT_LIMIT || 800));
+  await env.DB.prepare(
+    'INSERT INTO provider_usage (provider, day, credits_reserved, jobs) VALUES (?1, ?2, 0, 0) ON CONFLICT(provider, day) DO NOTHING',
+  ).bind(provider, day).run();
+  const result = await env.DB.prepare(
+    `UPDATE provider_usage
+        SET credits_reserved = credits_reserved + ?1, jobs = jobs + 1
+      WHERE provider = ?2 AND day = ?3 AND credits_reserved + ?1 <= ?4`,
+  ).bind(creditsPerImage, provider, day, dailyCreditLimit).run();
+  if (!(result.meta?.changes ?? 0)) {
+    throw new Error(`Kie daily credit safety limit reached (${dailyCreditLimit} credits)`);
+  }
+}

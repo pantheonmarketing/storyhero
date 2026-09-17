@@ -1,6 +1,7 @@
 import { encodeBase64, loadMediaReference, publicMediaUrl, putMedia } from './media';
 import type { Bindings } from './types';
 import { generateHiggsfieldImage } from './higgsfield';
+import { generateKieImage } from './kie';
 import { reserveGeminiImage } from './usage';
 
 const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta/models';
@@ -91,6 +92,9 @@ export async function generateImage(
   references: string[],
   fileName: string,
 ): Promise<string> {
+  if (env.IMAGE_PROVIDER === 'kie') {
+    return generateKieImage(env, requestUrl, prompt, references, fileName);
+  }
   if (env.IMAGE_PROVIDER === 'higgsfield') {
     return generateHiggsfieldImage(env, requestUrl, prompt, references, fileName);
   }
@@ -121,14 +125,18 @@ export async function generateImage(
     await putMedia(env, key, new Uint8Array(atob(image.data).split('').map((char) => char.charCodeAt(0))), image.mimeType);
     return publicMediaUrl(requestUrl, key);
   } catch (error) {
-    if (env.IMAGE_FALLBACK_PROVIDER !== 'higgsfield' || !isGeminiFallbackError(error)) throw error;
+    if (!isGeminiFallbackError(error)) throw error;
     const primaryDetail = error instanceof Error ? error.message : String(error);
-    console.warn(`Gemini image generation is temporarily unavailable; falling back to Higgsfield. ${primaryDetail.slice(0, 180)}`);
+    const fallback = env.IMAGE_FALLBACK_PROVIDER;
+    if (fallback !== 'higgsfield' && fallback !== 'kie') throw error;
+    console.warn(`Gemini image generation is temporarily unavailable; falling back to ${fallback}. ${primaryDetail.slice(0, 180)}`);
     try {
-      return await generateHiggsfieldImage(env, requestUrl, prompt, references, fileName);
+      return fallback === 'kie'
+        ? await generateKieImage(env, requestUrl, prompt, references, fileName)
+        : await generateHiggsfieldImage(env, requestUrl, prompt, references, fileName);
     } catch (fallbackError) {
       const detail = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
-      throw new Error(`Gemini image generation failed and the Higgsfield fallback also failed: ${detail.slice(0, 220)}`);
+      throw new Error(`Gemini image generation failed and the ${fallback} fallback also failed: ${detail.slice(0, 220)}`);
     }
   }
 }
