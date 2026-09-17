@@ -248,7 +248,11 @@ async function ensureSchema(db: D1Database) {
 }
 
 // Accounts allowed unlimited books (owner/testing). Everyone else: credit system.
-const OWNER_EMAILS = new Set(['yoniwe@gmail.com']);
+const OWNER_EMAILS = new Set([
+  'yoniwe@gmail.com',
+  'krubow.cu@gmail.com',
+  'pitiphat.siri@gmail.com',
+]);
 const PARENT_BOOK_LIMIT = 6;
 
 const uid = () => crypto.randomUUID();
@@ -617,7 +621,7 @@ app.get('/api/users/me', appAuth, async (c) => {
 app.delete('/api/users/me', appAuth, async (c) => {
   await ensureSchema(c.env.DB);
   const user = c.get('user');
-  if (OWNER_EMAILS.has(user.email)) {
+  if (OWNER_EMAILS.has(norm(user.email))) {
     return c.json({ error: 'Owner accounts must be deleted through an audited maintenance process' }, 400);
   }
   const { confirmation } = await c.req.json().catch(() => ({}));
@@ -846,7 +850,7 @@ app.post('/api/children', appAuth, approvedOnly, async (c) => {
   if (photo_b64.length > 4_500_000) return c.json({ error: 'Photo too large' }, 400);
 
   // Small beta cap keeps personal-data collection and generation spend bounded.
-  if (!OWNER_EMAILS.has(user.email)) {
+  if (!OWNER_EMAILS.has(norm(user.email))) {
     const n = await c.env.DB.prepare('SELECT COUNT(*) AS n FROM children WHERE user_email = ?1')
       .bind(user.email).first<any>();
     if ((n?.n ?? 0) >= 3) return c.json({ error: 'Child profile limit reached (3 profiles)' }, 429);
@@ -896,7 +900,7 @@ app.post('/api/children/:id/hero', appAuth, approvedOnly, async (c) => {
 
   // The first render plus two redraws is enough to choose a good character while
   // keeping a stolen beta account from creating unbounded image spend.
-  if (!OWNER_EMAILS.has(user.email) && (child.hero_regens ?? 0) >= 3) {
+  if (!OWNER_EMAILS.has(norm(user.email)) && (child.hero_regens ?? 0) >= 3) {
     return c.json({ error: 'Redraw limit reached for this child (3 images)' }, 429);
   }
 
@@ -978,7 +982,7 @@ app.post('/api/books', appAuth, approvedOnly, async (c) => {
   // Credit gate: 1 credit = 1 book, charged atomically up front (owners exempt).
   // Refunded on any generation failure below. 'trial_limit' error keeps the
   // existing upgrade-modal behavior on the frontend.
-  const charged = !OWNER_EMAILS.has(user.email);
+  const charged = !OWNER_EMAILS.has(norm(user.email));
   const access = await getAccountAccess(c.env.DB, user.email);
   if (charged && access.booksRemaining === 0) {
     return c.json({ error: 'book_limit' }, 403);
@@ -1346,7 +1350,7 @@ app.get('/api/credits', appAuth, async (c) => {
 
 const adminOnly = async (c: any, next: () => Promise<void>) => {
   const user = c.get('user');
-  if (!user || !OWNER_EMAILS.has(user.email)) return c.json({ error: 'Not found' }, 404);
+  if (!user || !OWNER_EMAILS.has(norm(user.email))) return c.json({ error: 'Not found' }, 404);
   return next();
 };
 
